@@ -110,7 +110,153 @@ export interface IgnoreUrlsConfig {
 }
 
 /**
- * OpenTelemetryConfig
+ * Retry configuration for enhanced resilience
+ */
+export interface RetryConfig {
+  /** Enable/disable retry logic */
+  enabled?: boolean;
+  /** Maximum number of retry attempts */
+  maxAttempts?: number;
+  /** Initial delay in milliseconds */
+  initialDelayMs?: number;
+  /** Maximum delay in milliseconds */
+  maxDelayMs?: number;
+  /** Backoff multiplier for exponential backoff */
+  backoffMultiplier?: number;
+  /** Jitter configuration */
+  jitter?: {
+    /** Enable/disable jitter */
+    enabled?: boolean;
+    /** Jitter strategy type */
+    type?: 'full' | 'equal' | 'decorrelated';
+    /** Maximum jitter in milliseconds */
+    maxJitterMs?: number;
+  };
+}
+
+/**
+ * Logs configuration
+ */
+export interface LogsConfig {
+  /** Enable/disable logs collection */
+  enabled?: boolean;
+  /** Log level threshold */
+  level?: 'debug' | 'info' | 'warn' | 'error';
+  /** Enable console output for logs */
+  console?: boolean;
+  /** Bridge console.log calls to OpenTelemetry */
+  consoleBridge?: boolean;
+  /** Rate limiting configuration */
+  rateLimit?: {
+    /** Maximum logs per minute globally */
+    maxPerMinute?: number;
+    /** Per-severity rate limits */
+    perSeverity?: Partial<Record<'debug' | 'info' | 'warn' | 'error', number>>;
+  };
+  /** PII redaction configuration */
+  redact?: {
+    /** Enable PII redaction */
+    enabled?: boolean;
+    /** Regex patterns for PII detection */
+    patterns?: (string | RegExp)[];
+  };
+}
+
+/**
+ * Metrics configuration
+ */
+export interface MetricsConfig {
+  /** Enable/disable metrics collection */
+  enabled?: boolean;
+  /** Enable Web Vitals collection */
+  webVitals?: boolean;
+  /** Collect First Contentful Paint */
+  collectFCP?: boolean;
+  /** Collect Time to First Byte */
+  collectTTFB?: boolean;
+  /** Enable console output for metrics */
+  console?: boolean;
+  /** Metrics export interval in milliseconds */
+  interval?: number;
+  /** Histogram boundaries for timing metrics */
+  histogramBoundariesMs?: number[];
+  /** URL hygiene settings */
+  urlHygiene?: {
+    /** Strip query parameters from URLs */
+    stripQuery?: boolean;
+    /** Strip URL fragments */
+    stripFragment?: boolean;
+  };
+}
+
+/**
+ * Logs exporters configuration
+ */
+export interface LogsExporters {
+  /** OTLP exporter for logs */
+  otlp?: {
+    /** OTLP endpoint URL (defaults to otelcolConfig.url/logs) */
+    url?: string;
+    /** Custom headers (defaults to otelcolConfig.headers) */
+    headers?: Record<string, string>;
+    /** Request timeout in milliseconds */
+    timeoutMs?: number;
+    /** Retry configuration */
+    retry?: RetryConfig;
+  };
+  /** Console exporter for logs */
+  console?: {
+    /** Enable console output */
+    enabled?: boolean;
+  };
+  /** Disable all exporters */
+  none?: {
+    /** Disable all log exporters */
+    enabled?: boolean;
+  };
+}
+
+/**
+ * Metrics exporters configuration
+ */
+export interface MetricsExporters {
+  /** OTLP exporter for metrics */
+  otlp?: {
+    /** OTLP endpoint URL (defaults to otelcolConfig.url/metrics) */
+    url?: string;
+    /** Custom headers (defaults to otelcolConfig.headers) */
+    headers?: Record<string, string>;
+    /** Export interval in milliseconds */
+    intervalMs?: number;
+    /** Request timeout in milliseconds */
+    timeoutMs?: number;
+    /** Retry configuration */
+    retry?: RetryConfig;
+  };
+  /** Console exporter for metrics */
+  console?: {
+    /** Enable console output */
+    enabled?: boolean;
+    /** Console export interval in milliseconds */
+    intervalMs?: number;
+  };
+  /** Prometheus exporter for metrics */
+  prometheus?: {
+    /** Prometheus endpoint path */
+    endpoint?: string;
+    /** Prometheus server port */
+    port?: number;
+  };
+  /** Disable all exporters */
+  none?: {
+    /** Disable all metric exporters */
+    enabled?: boolean;
+  };
+}
+
+/**
+ * Enhanced OpenTelemetryConfig with Logs and Metrics support
+ * ✅ Fully backwards compatible with existing Jufab configurations
  */
 export interface OpenTelemetryConfig {
   /** commonConfig */
@@ -127,6 +273,18 @@ export interface OpenTelemetryConfig {
   b3PropagatorConfig?: B3PropagatorConfig;
   /** ignoreUrls */
   ignoreUrls?: IgnoreUrlsConfig;
+  
+  // ✅ NEW: Logs configuration and exporters (zero migration required)
+  /** logsConfig: Configuration for structured logging */
+  logsConfig?: LogsConfig;
+  /** logsExporters: Configure where logs are exported */
+  logsExporters?: LogsExporters;
+  
+  // ✅ NEW: Metrics configuration and exporters (zero migration required)
+  /** metricsConfig: Configuration for metrics collection */
+  metricsConfig?: MetricsConfig;
+  /** metricsExporters: Configure where metrics are exported */
+  metricsExporters?: MetricsExporters;
 }
 
 /** OTEL_CONFIG : Config injection */
@@ -139,6 +297,19 @@ export const OTEL_LOGGER = new InjectionToken<DiagLogger>('otelcol.logger');
 export const OTEL_CUSTOM_SPAN = new InjectionToken<CustomSpan>('otelcol.custom-span');
 
 export const OTEL_INSTRUMENTATION_PLUGINS = new InjectionToken<Instrumentation[]>('otelcol.instrumentation.plugins');
+
+// ✅ NEW: Injection tokens for logs and metrics
+/** Logs configuration injection token */
+export const OTEL_LOGS_CONFIG = new InjectionToken<LogsConfig>('otelcol.logs.config');
+
+/** Logs provider injection token */
+export const OTEL_LOGS_PROVIDER = new InjectionToken<any>('otelcol.logs.provider');
+
+/** Metrics configuration injection token */
+export const OTEL_METRICS_CONFIG = new InjectionToken<MetricsConfig>('otelcol.metrics.config');
+
+/** Metrics provider injection token */
+export const OTEL_METRICS_PROVIDER = new InjectionToken<any>('otelcol.metrics.provider');
 
 export const defineConfigProvider = (
   config: OpenTelemetryConfig | null | undefined,

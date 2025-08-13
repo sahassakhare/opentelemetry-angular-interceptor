@@ -43,5 +43,34 @@ export {
   IgnoreUrlsConfig,
   OTEL_LOGGER,
   OTEL_CUSTOM_SPAN,
-  OTEL_INSTRUMENTATION_PLUGINS
+  OTEL_INSTRUMENTATION_PLUGINS,
+  // ✅ NEW: Enhanced configuration interfaces
+  LogsConfig,
+  LogsExporters,
+  MetricsConfig,
+  MetricsExporters,
+  RetryConfig,
+  OTEL_LOGS_CONFIG,
+  OTEL_LOGS_PROVIDER,
+  OTEL_METRICS_CONFIG,
+  OTEL_METRICS_PROVIDER
 } from './lib/configuration/opentelemetry-config';
+
+// ✅ NEW: Logs and Metrics Services
+export {
+  OpenTelemetryLogsService,
+  OpenTelemetryErrorHandler,
+  logsProviderFactory
+} from './lib/services/logs';
+
+export {
+  OpenTelemetryMetricsService,
+  metricsProviderFactory
+} from './lib/services/metrics';
+
+// ✅ NEW: Retry utilities
+export {
+  RetryableExporter,
+  RetryableOTLPExporter,
+  RetryableOTLPMetricExporter
+} from './lib/services/retry-utils';
