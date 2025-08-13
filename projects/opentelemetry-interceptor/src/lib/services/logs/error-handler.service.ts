@@ -79,7 +79,7 @@ export class OpenTelemetryErrorHandler implements ErrorHandler {
     });
 
     this.isInitialized = true;
-    console.log('✅ Global error handlers initialized');
+    console.log('Global error handlers initialized');
   }
 
   /**

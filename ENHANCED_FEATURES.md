@@ -23,7 +23,16 @@ This is an enhanced version of [@jufab/opentelemetry-angular-interceptor](https:
 - Multiple jitter strategies (full, equal, decorrelated)
 - Applies to all exporters (traces, logs, metrics)
 
-## Zero-Migration Usage
+### Modular Exporters
+- Separate exporter modules following original Jufab span exporter pattern
+- Fine-grained control over individual exporters
+- Support for multiple exporters simultaneously
+- Environment-based and feature-flag driven configurations
+- Better tree-shaking and testability
+
+## Usage Patterns
+
+### Pattern 1: Configuration-Based (Zero-Migration)
 
 The enhanced module maintains 100% backwards compatibility with existing Jufab configurations:
 
@@ -124,6 +133,56 @@ import { OpenTelemetryInterceptorModule } from '@jufab/opentelemetry-angular-int
 })
 export class AppModule { }
 ```
+
+### Pattern 2: Modular Exporters
+
+Use separate exporter modules for fine-grained control:
+
+```typescript
+import { 
+  OpenTelemetryInterceptorModule,
+  LogsOtelcolExporterModule,
+  LogsConsoleExporterModule,
+  MetricsOtelcolExporterModule,
+  MetricsConsoleExporterModule
+} from '@jufab/opentelemetry-angular-interceptor';
+
+@NgModule({
+  imports: [
+    // Base interceptor configuration
+    OpenTelemetryInterceptorModule.forRoot({
+      commonConfig: {
+        serviceName: 'my-app',
+        console: true
+      },
+      otelcolConfig: {
+        url: 'http://localhost:4318/v1/traces'
+      },
+      // Enable features but configure exporters via modules
+      logsConfig: { 
+        enabled: true,
+        level: 'info',
+        consoleBridge: true 
+      },
+      metricsConfig: { 
+        enabled: true,
+        webVitals: true 
+      }
+    }),
+    
+    // Modular logs exporters
+    LogsOtelcolExporterModule.forRoot(),
+    LogsConsoleExporterModule.forRoot(),
+    
+    // Modular metrics exporters
+    MetricsOtelcolExporterModule.forRoot(),
+    MetricsConsoleExporterModule.forRoot()
+  ]
+})
+export class AppModule { }
+```
+
+See the [Modular Exporters Guide](./MODULAR_EXPORTERS_GUIDE.md) for advanced patterns including environment-based selection, feature flags, and custom exporters.
 
 ## Service Usage
 

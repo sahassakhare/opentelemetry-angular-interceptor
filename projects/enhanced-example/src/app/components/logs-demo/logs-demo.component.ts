@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { OpenTelemetryLogsService } from '../../../../opentelemetry-interceptor/src/public-api';
+import { OpenTelemetryLogsService } from '../../../../../opentelemetry-interceptor/src/public-api';
 
 @Component({
   selector: 'app-logs-demo',

@@ -4,13 +4,31 @@ import { HttpClientModule } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 
 import { AppComponent } from './app.component';
-import { OpenTelemetryInterceptorModule } from '../../../opentelemetry-interceptor/src/public-api';
-
+import { 
+  OpenTelemetryInterceptorModule,
+  OtelColExporterModule, // Add trace exporter for HTTP interceptor
+  CompositePropagatorModule, // Add propagator for trace context
+  LogsOtelcolExporterModule,
+  LogsConsoleExporterModule,
+  MetricsOtelcolExporterModule,
+  MetricsConsoleExporterModule
+} from '../../../opentelemetry-interceptor/src/public-api';
 // Demo components
 import { HomeComponent } from './components/home/home.component';
 import { LogsDemoComponent } from './components/logs-demo/logs-demo.component';
 import { MetricsDemoComponent } from './components/metrics-demo/metrics-demo.component';
 import { ErrorDemoComponent } from './components/error-demo/error-demo.component';
+
+/**
+ * Example module using the Configuration-Based approach
+ * 
+ * This is the traditional approach where all exporters are configured
+ * through the main configuration object. Good for simple setups and
+ * maintaining backwards compatibility.
+ * 
+ * For comparison, see app-modular.module.ts which demonstrates
+ * the new Modular Exporters pattern.
+ */
 
 @NgModule({
   declarations: [
@@ -23,6 +41,19 @@ import { ErrorDemoComponent } from './components/error-demo/error-demo.component
   imports: [
     BrowserModule,
     HttpClientModule,
+    // Import exporter modules FIRST, before OpenTelemetryInterceptorModule
+     LogsOtelcolExporterModule.forRoot({
+          // retry: {
+          //   enabled: false, // DISABLE RETRIES TO PREVENT BROWSER CRASH
+          //   maxAttempts: 1
+          // }
+        }),
+        
+        // Console logs exporter for development debugging
+        LogsConsoleExporterModule.forRoot(),
+        
+    OtelColExporterModule, // Move this BEFORE the interceptor module
+    CompositePropagatorModule, // Move this BEFORE the interceptor module
     RouterModule.forRoot([
       { path: '', component: HomeComponent },
       { path: 'logs', component: LogsDemoComponent },
@@ -30,7 +61,7 @@ import { ErrorDemoComponent } from './components/error-demo/error-demo.component
       { path: 'errors', component: ErrorDemoComponent }
     ]),
     OpenTelemetryInterceptorModule.forRoot({
-      // ============================================
+      // ============================================  
       // STANDARD JUFAB CONFIGURATION (TRACING)
       // ============================================
       commonConfig: {
@@ -46,10 +77,10 @@ import { ErrorDemoComponent } from './components/error-demo/error-demo.component
       },
 
       batchSpanProcessorConfig: {
-        maxQueueSize: 2048,
-        maxExportBatchSize: 512,
-        scheduledDelayMillis: 5000,
-        exportTimeoutMillis: 30000
+        maxQueueSize: "2048",
+        maxExportBatchSize: "512",
+        scheduledDelayMillis: "5000",
+        exportTimeoutMillis: "30000"
       },
 
       otelcolConfig: {
@@ -57,7 +88,8 @@ import { ErrorDemoComponent } from './components/error-demo/error-demo.component
       },
 
       // ============================================
-      // ENHANCED FEATURES (LOGS & METRICS)
+      // ENHANCED FEATURES (LOGS & METRICS)  
+      // Configuration-based exporter approach
       // ============================================
 
       // Logs Configuration
@@ -88,14 +120,9 @@ import { ErrorDemoComponent } from './components/error-demo/error-demo.component
 
       logsExporters: {
         otlp: {
-          enabled: true,
           retry: {
-            enabled: true,
-            maxAttempts: 3,
-            initialDelay: 1000,
-            maxDelay: 30000,
-            backoffMultiplier: 2,
-            jitterType: 'full'
+            enabled: false, // DISABLE RETRIES TO PREVENT BROWSER CRASH
+            maxAttempts: 1
           }
         },
         console: {
@@ -120,15 +147,10 @@ import { ErrorDemoComponent } from './components/error-demo/error-demo.component
 
       metricsExporters: {
         otlp: {
-          enabled: true,
           intervalMs: 15000,
           retry: {
-            enabled: true,
-            maxAttempts: 3,
-            initialDelay: 1000,
-            maxDelay: 30000,
-            backoffMultiplier: 2,
-            jitterType: 'full'
+            enabled: false, // DISABLE RETRIES TO PREVENT BROWSER CRASH
+            maxAttempts: 1
           }
         },
         console: {
@@ -137,6 +159,7 @@ import { ErrorDemoComponent } from './components/error-demo/error-demo.component
         }
       }
     })
+    // Exporter modules moved to top of imports array
   ],
   providers: [],
   bootstrap: [AppComponent]

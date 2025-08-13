@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { OpenTelemetryMetricsService } from '../../../../opentelemetry-interceptor/src/public-api';
+import { OpenTelemetryMetricsService } from '../../../../../opentelemetry-interceptor/src/public-api';
 
 @Component({
   selector: 'app-metrics-demo',
@@ -69,7 +69,7 @@ import { OpenTelemetryMetricsService } from '../../../../opentelemetry-intercept
         <p>Track business-specific metrics:</p>
         <div class="button-group">
           <button (click)="trackPurchase()" class="btn btn-success">
-            Track Purchase (${{ totalRevenue }})
+            Track Purchase ({{ '$' + totalRevenue }})
           </button>
           <button (click)="trackUserEngagement()" class="btn btn-primary">
             Track User Engagement
@@ -381,7 +381,7 @@ export class MetricsDemoComponent implements OnInit, OnDestroy {
       this.otelMetrics.recordCustomHistogram('demo.database.query_time', actualTime, {
         'db.operation': 'SELECT',
         'db.table': 'demo_table',
-        'db.rows_returned': Math.floor(Math.random() * 100)
+        'db.rows_returned': Math.floor(Math.random() * 100).toString()
       });
     }, queryTime);
   }
@@ -423,7 +423,7 @@ export class MetricsDemoComponent implements OnInit, OnDestroy {
     this.otelMetrics.recordCustomHistogram('demo.user.engagement_score', engagementScore, {
       'engagement.type': 'manual-trigger',
       'user.segment': 'demo-users',
-      'session.duration': Math.floor((Date.now() - this.pageStartTime) / 1000)
+      'session.duration': Math.floor((Date.now() - this.pageStartTime) / 1000).toString()
     });
   }
 
@@ -431,7 +431,7 @@ export class MetricsDemoComponent implements OnInit, OnDestroy {
     this.otelMetrics.recordCustomCounter('demo.business.conversions', 1, {
       'conversion.type': 'demo-conversion',
       'conversion.source': 'metrics-demo',
-      'conversion.value': Math.floor(Math.random() * 50) + 10
+      'conversion.value': (Math.floor(Math.random() * 50) + 10).toString()
     });
   }
 

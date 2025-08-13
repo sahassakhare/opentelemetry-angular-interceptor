@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { OpenTelemetryLogsService } from '../../opentelemetry-interceptor/src/public-api';
+import { OpenTelemetryLogsService } from '../../../opentelemetry-interceptor/src/public-api';
 
 @Component({
   selector: 'app-root',
@@ -20,7 +20,7 @@ import { OpenTelemetryLogsService } from '../../opentelemetry-interceptor/src/pu
       </main>
       
       <footer class="app-footer">
-        <p>Enhanced with Logs & Metrics support | Original: <a href="https://github.com/jufab/opentelemetry-angular-interceptor" target="_blank">@jufab/opentelemetry-angular-interceptor</a></p>
+        <p>Enhanced with Logs & Metrics support | Original: <a href="https://github.com/jufab/opentelemetry-angular-interceptor" target="_blank">&#64;jufab/opentelemetry-angular-interceptor</a></p>
       </footer>
     </div>
   `,

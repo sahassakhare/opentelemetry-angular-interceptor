@@ -3,7 +3,10 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "../../out-tsc/app",
-    "types": []
+    "types": [],
+    "paths": {
+      "@jufab/opentelemetry-angular-interceptor": ["../../dist/opentelemetry-interceptor"]
+    }
   },
   "files": [
     "src/main.ts"

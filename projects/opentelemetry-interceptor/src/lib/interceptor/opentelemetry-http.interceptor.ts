@@ -42,7 +42,7 @@ import {
   // ATTR_HTTP_REQUEST_HEADER,
   //SEMATTRS_ERROR_TYPE
 } from '@opentelemetry/semantic-conventions';
-import { Resource, resourceFromAttributes } from '@opentelemetry/resources';
+import { Resource } from '@opentelemetry/resources';
 import { tap, finalize } from 'rxjs/operators';
 import {
   CommonCollectorConfig,
@@ -87,8 +87,8 @@ export class OpenTelemetryHttpInterceptor implements HttpInterceptor {
    */
    constructor(
     @Inject(OTEL_CONFIG) private config: OpenTelemetryConfig,
-    @Inject(OTEL_EXPORTER)
-    private exporterService: IExporter,
+    @Optional() @Inject(OTEL_EXPORTER)
+    private exporterService: IExporter | null,
     @Inject(OTEL_PROPAGATOR)
     private propagatorService: IPropagator,
     @Optional() @Inject(OTEL_LOGGER)
@@ -97,6 +97,13 @@ export class OpenTelemetryHttpInterceptor implements HttpInterceptor {
     private customSpan: CustomSpan,
     private platformLocation: PlatformLocation
   ) {
+    // console.log('[HTTP-INTERCEPTOR] Constructor called with services:', {
+    //   configExists: !!this.config,
+    //   exporterServiceExists: !!this.exporterService,
+    //   exporterServiceType: this.exporterService?.constructor?.name,
+    //   propagatorServiceExists: !!this.propagatorService,
+    //   otelcolConfig: this.config?.otelcolConfig
+    // });
     this.tracer = new WebTracerProvider({
       sampler: this.defineProbabilitySampler(this.convertStringToNumber(config.commonConfig.probabilitySampler)),
       resource: this.loadResourceAttributes(this.config.commonConfig),
@@ -122,9 +129,14 @@ export class OpenTelemetryHttpInterceptor implements HttpInterceptor {
       request: HttpRequest<unknown>,
       next: HttpHandler
     ): Observable<HttpEvent<unknown>> {
+      // console.log(`[HTTP-INTERCEPTOR] Intercepting HTTP ${request.method} ${request.url}`);
+      
       if (isUrlIgnored(request.url, this.config.ignoreUrls?.urls)) {
+        // console.log(`[HTTP-INTERCEPTOR] URL ignored: ${request.url}`);
         return next.handle(request);
       }
+      
+      // console.log(`[HTTP-INTERCEPTOR] Processing HTTP request for tracing`);
       this.contextManager.disable(); //FIX - reinit contextManager for each http call
       this.contextManager.enable();
       const span: Span = this.initSpan(request);
@@ -183,7 +195,7 @@ export class OpenTelemetryHttpInterceptor implements HttpInterceptor {
   private loadResourceAttributes(
     commonConfig: CommonCollectorConfig
   ): Resource {
-    return resourceFromAttributes({
+    return new Resource({
       [ATTR_SERVICE_NAME]: commonConfig?.serviceName,
       ...commonConfig?.resourceAttributes,
     });
@@ -194,6 +206,9 @@ export class OpenTelemetryHttpInterceptor implements HttpInterceptor {
    * @param request request
    */
   private initSpan(request: HttpRequest<unknown>): Span {
+    // console.log(`[HTTP-INTERCEPTOR] Creating span for ${request.method} ${request.url}`);
+    // console.log(`[HTTP-INTERCEPTOR] Tracer exists:`, !!this.tracer);
+    
     const urlRequest = (request.urlWithParams.startsWith('http')) ? new URL(request.urlWithParams) : new URL(this.getURL());
     const span = this.tracer
       .getTracer(infoLibrary.name, infoLibrary.version)
@@ -247,10 +262,17 @@ export class OpenTelemetryHttpInterceptor implements HttpInterceptor {
    * Verify to insert or not a Span Exporter
    */
   private insertOrNotSpanExporter() {
+    // console.log('[HTTP-INTERCEPTOR] Checking exporter service:', {
+    //   exporterServiceExists: !!this.exporterService,
+    //   exporterServiceType: this.exporterService?.constructor?.name,
+    //   exporterResult: this.exporterService?.getExporter()
+    // });
 
-    if (this.exporterService.getExporter() !== undefined) {
+    if (this.exporterService && this.exporterService.getExporter() !== undefined) {
+      // console.log('[HTTP-INTERCEPTOR] Using real span processors (OTLP + Console)');
       return Array.of(this.insertSpanProcessorProductionMode(), this.insertConsoleSpanExporter());
     } else {
+      // console.log('[HTTP-INTERCEPTOR] Using NoopSpanProcessor - no traces will be exported!');
       return Array.of(new NoopSpanProcessor());
     }
   }

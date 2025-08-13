@@ -21,7 +21,7 @@ import {
 import { OTEL_CONFIG, OpenTelemetryConfig, OTEL_INSTRUMENTATION_PLUGINS, CommonCollectorConfig } from '../../configuration/opentelemetry-config';
 import { OTEL_EXPORTER, IExporter } from '../exporter/exporter.interface';
 import { OTEL_PROPAGATOR, IPropagator } from '../propagator/propagator.interface';
-import { Resource, resourceFromAttributes } from '@opentelemetry/resources';
+import { Resource } from '@opentelemetry/resources';
 
 /**
  * InstrumentationService.
@@ -87,7 +87,7 @@ export class InstrumentationService {
   private loadResourceAttributes(
     commonConfig: CommonCollectorConfig
   ): Resource {
-    return resourceFromAttributes({
+    return new Resource({
       [ATTR_SERVICE_NAME]: commonConfig?.serviceName,
       ...commonConfig?.resourceAttributes,
     });

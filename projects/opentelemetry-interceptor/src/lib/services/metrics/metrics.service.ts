@@ -94,9 +94,9 @@ export class OpenTelemetryMetricsService implements OnDestroy {
         this.initializeWebVitalsMetrics();
       }
 
-      console.log('✅ OpenTelemetry Metrics initialized successfully');
+      console.log('OpenTelemetry Metrics initialized successfully');
     } catch (error) {
-      console.error('❌ Failed to initialize OpenTelemetry Metrics:', error);
+      console.error('Failed to initialize OpenTelemetry Metrics:', error);
     }
   }
 
@@ -139,7 +139,7 @@ export class OpenTelemetryMetricsService implements OnDestroy {
   /**
    * Initialize Web Vitals collection
    */
-  private async initializeWebVitals(): void {
+  private async initializeWebVitals(): Promise<void> {
     if (!this.config.webVitals || !isPlatformBrowser(this.platformId)) {
       return;
     }
@@ -177,9 +177,9 @@ export class OpenTelemetryMetricsService implements OnDestroy {
         });
       }
 
-      console.log('✅ Web Vitals collection initialized');
+      console.log('Web Vitals collection initialized');
     } catch (error) {
-      console.warn('❌ Web Vitals not available:', error);
+      console.warn('Web Vitals not available:', error);
     }
   }
 
@@ -214,7 +214,7 @@ export class OpenTelemetryMetricsService implements OnDestroy {
     };
 
     if (this.config.console) {
-      console.log(`📊 Web Vital [${type.toUpperCase()}]:`, {
+      console.log(`Web Vital [${type.toUpperCase()}]:`, {
         value: metric.value,
         rating: metric.rating,
         url: sanitizedUrl
@@ -254,7 +254,7 @@ export class OpenTelemetryMetricsService implements OnDestroy {
     });
 
     if (this.config.console) {
-      console.log(`📊 Page Load: ${loadTime}ms for ${sanitizedUrl}`);
+      console.log(`Page Load: ${loadTime}ms for ${sanitizedUrl}`);
     }
   }
 
@@ -272,7 +272,7 @@ export class OpenTelemetryMetricsService implements OnDestroy {
     });
 
     if (this.config.console) {
-      console.log(`📊 Navigation: ${sanitizedUrl}`);
+      console.log(`Navigation: ${sanitizedUrl}`);
     }
   }
 
@@ -289,7 +289,7 @@ export class OpenTelemetryMetricsService implements OnDestroy {
     });
 
     if (this.config.console) {
-      console.log(`📊 Error: ${errorType} - ${message}`);
+      console.log(`Error: ${errorType} - ${message}`);
     }
   }
 
@@ -306,7 +306,7 @@ export class OpenTelemetryMetricsService implements OnDestroy {
     });
 
     if (this.config.console) {
-      console.log(`📊 Interaction: ${interactionType} on ${target}`);
+      console.log(`Interaction: ${interactionType} on ${target}`);
     }
   }
 
@@ -325,7 +325,7 @@ export class OpenTelemetryMetricsService implements OnDestroy {
       });
 
       if (this.config.console) {
-        console.log(`📊 Custom Counter [${name}]: ${value}`, attributes);
+        console.log(`Custom Counter [${name}]: ${value}`, attributes);
       }
     } catch (error) {
       console.warn(`Failed to record custom counter ${name}:`, error);
@@ -347,7 +347,7 @@ export class OpenTelemetryMetricsService implements OnDestroy {
       });
 
       if (this.config.console) {
-        console.log(`📊 Custom Histogram [${name}]: ${value}`, attributes);
+        console.log(`Custom Histogram [${name}]: ${value}`, attributes);
       }
     } catch (error) {
       console.warn(`Failed to record custom histogram ${name}:`, error);

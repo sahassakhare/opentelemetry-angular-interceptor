@@ -107,10 +107,10 @@
           },
           "configurations": {
             "production": {
-              "browserTarget": "interceptor-example:build:production"
+              "buildTarget": "interceptor-example:build:production"
             },
             "development": {
-              "browserTarget": "interceptor-example:build:development"
+              "buildTarget": "interceptor-example:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -118,7 +118,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "interceptor-example:build"
+            "buildTarget": "interceptor-example:build"
           }
         },
         "lint": {
@@ -205,10 +205,10 @@
           },
           "configurations": {
             "production": {
-              "browserTarget": "instrumentation-example:build:production"
+              "buildTarget": "instrumentation-example:build:production"
             },
             "development": {
-              "browserTarget": "instrumentation-example:build:development"
+              "buildTarget": "instrumentation-example:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -216,7 +216,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "instrumentation-example:build"
+            "buildTarget": "instrumentation-example:build"
           }
         },
         "test": {

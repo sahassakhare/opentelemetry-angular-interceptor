@@ -36,11 +36,11 @@ export function createMetricsProvider(
       readers: createMetricReaders(config, metricsConfig, metricsExporters)
     });
 
-    console.log('✅ OpenTelemetry Metrics Provider initialized successfully');
+    console.log('OpenTelemetry Metrics Provider initialized successfully');
     return meterProvider;
 
   } catch (error) {
-    console.error('❌ Failed to initialize OpenTelemetry Metrics Provider:', error);
+    console.error('Failed to initialize OpenTelemetry Metrics Provider:', error);
     return null;
   }
 }
@@ -83,9 +83,9 @@ function createMetricReaders(
       });
 
       readers.push(otlpReader);
-      console.log(`✅ OTLP Metrics reader added: ${metricsUrl}`);
+      console.log(`OTLP Metrics reader added: ${metricsUrl}`);
     } catch (error) {
-      console.error('❌ Failed to add OTLP metrics reader:', error);
+      console.error('Failed to add OTLP metrics reader:', error);
     }
   }
 
@@ -99,9 +99,9 @@ function createMetricReaders(
       });
 
       readers.push(consoleReader);
-      console.log('✅ Console Metrics reader added');
+      console.log('Console Metrics reader added');
     } catch (error) {
-      console.error('❌ Failed to add console metrics reader:', error);
+      console.error('Failed to add console metrics reader:', error);
     }
   }
 
@@ -110,9 +110,9 @@ function createMetricReaders(
     try {
       // Note: Prometheus exporter would need to be installed separately
       // This is a placeholder for when users want to add Prometheus support
-      console.log('📝 Prometheus metrics exporter configured but not implemented (requires @opentelemetry/exporter-prometheus)');
+      console.log('Prometheus metrics exporter configured but not implemented (requires @opentelemetry/exporter-prometheus)');
     } catch (error) {
-      console.error('❌ Failed to add Prometheus metrics reader:', error);
+      console.error('Failed to add Prometheus metrics reader:', error);
     }
   }
 

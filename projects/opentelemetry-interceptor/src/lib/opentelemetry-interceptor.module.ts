@@ -10,6 +10,7 @@ import {
   FactoryProvider,
   ErrorHandler,
   PLATFORM_ID,
+  Injector,
 } from '@angular/core';
 import {
   defineConfigProvider,
@@ -23,7 +24,7 @@ import {
 import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { OpenTelemetryHttpInterceptor } from './interceptor/opentelemetry-http.interceptor';
 
-// ✅ NEW: Import logs and metrics services
+// NEW: Import logs and metrics services
 import { 
   OpenTelemetryLogsService, 
   logsProviderFactory,
@@ -33,6 +34,10 @@ import {
   OpenTelemetryMetricsService, 
   metricsProviderFactory 
 } from './services/metrics';
+
+// NEW: Import multi-exporter factories
+import { logsProviderMultiFactory } from './services/logs/logs-provider-multi.factory';
+import { metricsProviderMultiFactory } from './services/metrics/metrics-provider-multi.factory';
 
 
 @NgModule({
@@ -56,7 +61,7 @@ export class OpenTelemetryInterceptorModule {
     configProvider?: ValueProvider | ClassProvider | ConstructorProvider | ExistingProvider | FactoryProvider
     ): ModuleWithProviders<OpenTelemetryInterceptorModule> {
 
-      // ✅ Original Jufab HTTP Interceptor (unchanged)
+      // Original Jufab HTTP Interceptor (unchanged)
       const interceptorProvider = {
         provide: HTTP_INTERCEPTORS,
         useClass: OpenTelemetryHttpInterceptor,
@@ -65,21 +70,22 @@ export class OpenTelemetryInterceptorModule {
 
       configProvider = defineConfigProvider(config, configProvider);
 
-      // ✅ NEW: Create enhanced providers array with logs and metrics
+      // NEW: Create enhanced providers array with logs and metrics
       const providers: any[] = [
         configProvider,
         interceptorProvider,
       ];
 
-      // ✅ NEW: Add logs configuration and providers
+      // NEW: Add logs configuration and providers
       if (config?.logsConfig?.enabled) {
+        // console.log('[MODULE] Adding logs providers - config.logsConfig.enabled is true');
         providers.push(
           // Logs config provider
           {
             provide: OTEL_LOGS_CONFIG,
             useValue: config.logsConfig
           },
-          // Logs provider factory
+          // Logs provider factory - use standard factory for config-based exporters
           {
             provide: OTEL_LOGS_PROVIDER,
             useFactory: logsProviderFactory,
@@ -95,7 +101,7 @@ export class OpenTelemetryInterceptorModule {
         );
       }
 
-      // ✅ NEW: Add metrics configuration and providers
+      // NEW: Add metrics configuration and providers
       if (config?.metricsConfig?.enabled) {
         providers.push(
           // Metrics config provider
@@ -103,11 +109,11 @@ export class OpenTelemetryInterceptorModule {
             provide: OTEL_METRICS_CONFIG,
             useValue: config.metricsConfig
           },
-          // Metrics provider factory
+          // Metrics provider factory - use multi-exporter factory for better compatibility
           {
             provide: OTEL_METRICS_PROVIDER,
-            useFactory: metricsProviderFactory,
-            deps: [OTEL_CONFIG, PLATFORM_ID]
+            useFactory: metricsProviderMultiFactory,
+            deps: [OTEL_CONFIG, PLATFORM_ID, Injector]
           },
           // Metrics service
           OpenTelemetryMetricsService

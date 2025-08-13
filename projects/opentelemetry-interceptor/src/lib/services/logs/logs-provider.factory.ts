@@ -39,11 +39,12 @@ export function createLogsProvider(
     // Add exporters based on configuration
     addLogExporters(loggerProvider, config, logsConfig, logsExporters);
 
-    console.log('✅ OpenTelemetry Logs Provider initialized successfully');
+    console.log('OpenTelemetry Logs Provider initialized successfully');
+    // console.log(`[LOGS-PROVIDER] Created LoggerProvider successfully`);
     return loggerProvider;
 
   } catch (error) {
-    console.error('❌ Failed to initialize OpenTelemetry Logs Provider:', error);
+    console.error('Failed to initialize OpenTelemetry Logs Provider:', error);
     return null;
   }
 }
@@ -55,6 +56,14 @@ function addLogExporters(
   logsExporters: LogsExporters
 ): void {
   const isProduction = config.commonConfig.production ?? false;
+
+  // Debug: Show what exporters configuration we received
+  // console.log('[LOGS-EXPORTERS] Received configuration:', {
+  //   logsExporters,
+  //   hasOtlp: !!logsExporters.otlp,
+  //   hasConsole: !!logsExporters.console,
+  //   noneEnabled: logsExporters.none?.enabled
+  // });
 
   // Add OTLP exporter
   if (logsExporters.otlp && !logsExporters.none?.enabled) {
@@ -76,6 +85,25 @@ function addLogExporters(
         timeoutMillis: otlpConfig.timeoutMs || 10000
       });
 
+      // Debug: Wrap the export method to see what's being sent
+      const originalExport = otlpExporter.export.bind(otlpExporter);
+      otlpExporter.export = (logs: any[], resultCallback: any) => {
+        // console.log(`[OTLP-LOGS] Attempting to export ${logs.length} log records to ${logsUrl}`);
+        // console.log(`[OTLP-LOGS] First log record:`, logs[0]);
+        
+        const wrappedCallback = (result: any) => {
+          // console.log(`[OTLP-LOGS] Export result:`, result);
+          if (result.code !== 0) {
+            console.error(`[OTLP-LOGS] Export failed with code ${result.code}:`, result.error);
+          } else {
+            // console.log(`[OTLP-LOGS] Successfully exported ${logs.length} logs`);
+          }
+          resultCallback(result);
+        };
+        
+        return originalExport(logs, wrappedCallback);
+      };
+
       // Wrap with retry logic if configured
       const finalExporter = otlpConfig.retry?.enabled 
         ? new RetryableOTLPExporter(otlpExporter, otlpConfig.retry)
@@ -86,10 +114,27 @@ function addLogExporters(
         : new SimpleLogRecordProcessor(finalExporter);
 
       loggerProvider.addLogRecordProcessor(processor);
-      console.log(`✅ OTLP Logs exporter added: ${logsUrl}`);
+      console.log(`OTLP Logs exporter added: ${logsUrl}`);
+      // console.log(`OTLP Logs configuration:`, {
+      //   url: logsUrl,
+      //   headers: { ...config.otelcolConfig?.headers, ...otlpConfig.headers },
+      //   timeoutMillis: otlpConfig.timeoutMs || 10000,
+      //   processor: isProduction ? 'BatchLogRecordProcessor' : 'SimpleLogRecordProcessor'
+      // });
+
+      // Test if OTLP endpoint is reachable
+      // fetch(logsUrl.replace('/v1/logs', '/'), { method: 'HEAD' })
+      //   .then(() => console.log(`[OTLP-LOGS] Collector endpoint appears to be reachable`))
+      //   .catch(err => console.warn(`[OTLP-LOGS] Collector endpoint may not be reachable:`, err.message));
     } catch (error) {
-      console.error('❌ Failed to add OTLP logs exporter:', error);
+      console.error('Failed to add OTLP logs exporter:', error);
     }
+  } else {
+    // console.log('[LOGS-EXPORTERS] OTLP exporter not added:', {
+    //   hasOtlp: !!logsExporters.otlp,
+    //   noneEnabled: logsExporters.none?.enabled,
+    //   condition: !!(logsExporters.otlp && !logsExporters.none?.enabled)
+    // });
   }
 
   // Add Console exporter
@@ -98,11 +143,19 @@ function addLogExporters(
       const consoleExporter = new ConsoleLogRecordExporter();
       const processor = new SimpleLogRecordProcessor(consoleExporter);
       loggerProvider.addLogRecordProcessor(processor);
-      console.log('✅ Console Logs exporter added');
+      console.log('Console Logs exporter added - structured OTEL logs will appear in console');
     } catch (error) {
-      console.error('❌ Failed to add console logs exporter:', error);
+      console.error('Failed to add console logs exporter:', error);
     }
+  } else {
+    // console.log('[LOGS-EXPORTERS] Console exporter not added:', {
+    //   consoleEnabled: logsExporters.console?.enabled,
+    //   logsConfigConsole: logsConfig.console
+    // });
   }
+
+  // Debug: Show final exporter status
+  // console.log('[LOGS-EXPORTERS] Exporter setup completed');
 }
 
 export function logsProviderFactory(

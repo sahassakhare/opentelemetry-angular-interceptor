@@ -1,10 +1,18 @@
 import { OpenTelemetryConfig } from './projects/opentelemetry-interceptor/src/lib/configuration/opentelemetry-config';
 
 /**
- * Example configuration showing the enhanced OpenTelemetry Angular Interceptor
+ * Example configurations showing the enhanced OpenTelemetry Angular Interceptor
  * with Logs and Metrics support alongside existing Tracing
+ * 
+ * Two patterns are available:
+ * 1. Configuration-based exporters (all-in-one config)
+ * 2. Modular exporters (separate modules for each exporter)
  */
-export const EXAMPLE_OTEL_CONFIG: OpenTelemetryConfig = {
+
+// ============================================
+// PATTERN 1: CONFIGURATION-BASED EXPORTERS
+// ============================================
+export const CONFIGURATION_BASED_CONFIG: OpenTelemetryConfig = {
   // ============================================
   // EXISTING JUFAB CONFIGURATION (UNCHANGED)
   // ============================================
@@ -271,3 +279,89 @@ export const PRODUCTION_CONFIG: OpenTelemetryConfig = {
     }
   }
 };
+
+// ============================================
+// PATTERN 2: MODULAR EXPORTERS
+// ============================================
+
+/**
+ * Base configuration for modular exporters approach
+ * Exporters are configured through separate modules instead of configuration
+ */
+export const MODULAR_EXPORTERS_BASE_CONFIG: OpenTelemetryConfig = {
+  // Standard Jufab configuration
+  commonConfig: {
+    console: true,
+    production: false,
+    serviceName: 'modular-app',
+    resourceAttributes: {
+      'service.namespace': 'demo',
+      'deployment.environment': 'development'
+    }
+  },
+  
+  otelcolConfig: {
+    url: 'http://localhost:4318/v1/traces'
+  },
+  
+  // Enable logs and metrics but don't configure exporters here
+  // Exporters will be provided by separate modules
+  logsConfig: {
+    enabled: true,
+    level: 'debug',
+    console: true,
+    consoleBridge: true
+  },
+  
+  metricsConfig: {
+    enabled: true,
+    webVitals: true,
+    collectFCP: true,
+    collectTTFB: true,
+    interval: 15000
+  }
+  
+  // Note: No logsExporters or metricsExporters configuration
+  // These will be provided by imported modules
+};
+
+/**
+ * Development environment configuration (modular)
+ * Uses console exporters for easy debugging
+ */
+export const MODULAR_DEVELOPMENT_CONFIG: OpenTelemetryConfig = {
+  ...MODULAR_EXPORTERS_BASE_CONFIG,
+  commonConfig: {
+    ...MODULAR_EXPORTERS_BASE_CONFIG.commonConfig,
+    production: false
+  }
+};
+
+/**
+ * Production environment configuration (modular)
+ * Uses OTLP exporters with retry logic
+ */
+export const MODULAR_PRODUCTION_CONFIG: OpenTelemetryConfig = {
+  ...MODULAR_EXPORTERS_BASE_CONFIG,
+  commonConfig: {
+    ...MODULAR_EXPORTERS_BASE_CONFIG.commonConfig,
+    console: false,
+    production: true,
+    probabilitySampler: '0.1'
+  },
+  otelcolConfig: {
+    url: 'https://otel-collector.example.com/v1/traces',
+    headers: {
+      'Authorization': 'Bearer ${OTEL_AUTH_TOKEN}'
+    }
+  },
+  logsConfig: {
+    ...MODULAR_EXPORTERS_BASE_CONFIG.logsConfig,
+    level: 'warn',
+    console: false,
+    consoleBridge: false
+  }
+};
+
+// Legacy export for backwards compatibility
+export const EXAMPLE_OTEL_CONFIG = CONFIGURATION_BASED_CONFIG;

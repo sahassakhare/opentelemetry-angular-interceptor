@@ -45,7 +45,11 @@ All three signals are automatically correlated through OpenTelemetry context pro
 npm install @jufab/opentelemetry-angular-interceptor
 ```
 
-### Basic Usage (Zero Migration)
+### Usage Patterns
+
+Two patterns are available for configuring logs and metrics exporters:
+
+#### Pattern 1: Configuration-Based (Recommended for Simple Use)
 
 The enhanced module maintains 100% backwards compatibility:
 
@@ -85,6 +89,47 @@ import { OpenTelemetryInterceptorModule } from '@jufab/opentelemetry-angular-int
         otlp: { enabled: true } // Auto-inherits URL from otelcolConfig
       }
     })
+  ]
+})
+export class AppModule { }
+```
+
+#### Pattern 2: Modular Exporters (Recommended for Advanced Use)
+
+For fine-grained control, use separate exporter modules:
+
+```typescript
+import { 
+  OpenTelemetryInterceptorModule,
+  LogsOtelcolExporterModule,
+  LogsConsoleExporterModule,
+  MetricsOtelcolExporterModule,
+  MetricsConsoleExporterModule
+} from '@jufab/opentelemetry-angular-interceptor';
+
+@NgModule({
+  imports: [
+    // Base interceptor configuration
+    OpenTelemetryInterceptorModule.forRoot({
+      commonConfig: {
+        serviceName: 'my-app',
+        console: true
+      },
+      otelcolConfig: {
+        url: 'http://localhost:4318/v1/traces'
+      },
+      // Enable features but configure exporters via modules
+      logsConfig: { enabled: true },
+      metricsConfig: { enabled: true }
+    }),
+    
+    // Modular logs exporters
+    LogsOtelcolExporterModule.forRoot(),
+    LogsConsoleExporterModule.forRoot(),
+    
+    // Modular metrics exporters
+    MetricsOtelcolExporterModule.forRoot(),
+    MetricsConsoleExporterModule.forRoot()
   ]
 })
 export class AppModule { }
@@ -141,7 +186,9 @@ Visit `http://localhost:5200` to see:
 ## Documentation
 
 - **[Enhanced Features Guide](./ENHANCED_FEATURES.md)** - Complete feature documentation
-- **[Example Configuration](./example-config.ts)** - Configuration examples
+- **[Modular Exporters Guide](./MODULAR_EXPORTERS_GUIDE.md)** - Modular exporters pattern documentation
+- **[Example Configuration](./example-config.ts)** - Configuration examples (both patterns)
+- **[Modular Examples](./modular-examples.ts)** - Modular exporter examples
 - **[Demo Application](./projects/enhanced-example/README.md)** - Interactive demo guide
 - **[Original Jufab Docs](https://github.com/jufab/opentelemetry-angular-interceptor)** - Base tracing features
 

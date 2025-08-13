@@ -43,6 +43,9 @@ export class OtelcolExporterService implements IExporter {
    * @return a CollectorExporter
    */
   getExporter(): SpanExporter {
-    return new OTLPTraceExporter(this.otelcolConfig);
+    // console.log('[OTELCOL-EXPORTER] Creating OTLPTraceExporter with config:', this.otelcolConfig);
+    const exporter = new OTLPTraceExporter(this.otelcolConfig);
+    // console.log('[OTELCOL-EXPORTER] OTLPTraceExporter created successfully');
+    return exporter;
   }
 }

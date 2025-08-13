@@ -4,18 +4,24 @@ export class RetryableExporter {
   private readonly config: Required<RetryConfig>;
 
   constructor(config: RetryConfig = {}) {
+    // Safety checks to prevent infinite retries
+    const maxAttempts = Math.max(1, Math.min(config.maxAttempts ?? 3, 10)); // Cap at 10 attempts
+    const initialDelayMs = Math.max(100, config.initialDelayMs ?? 1000); // Min 100ms delay
+    
     this.config = {
       enabled: config.enabled ?? true,
-      maxAttempts: config.maxAttempts ?? 3,
-      initialDelayMs: config.initialDelayMs ?? 1000,
+      maxAttempts,
+      initialDelayMs,
       maxDelayMs: config.maxDelayMs ?? 30000,
-      backoffMultiplier: config.backoffMultiplier ?? 2,
+      backoffMultiplier: Math.max(1, Math.min(config.backoffMultiplier ?? 2, 5)), // Cap multiplier
       jitter: {
         enabled: config.jitter?.enabled ?? true,
         type: config.jitter?.type ?? 'full',
         maxJitterMs: config.jitter?.maxJitterMs ?? 5000
       }
     };
+    
+    // console.log('[RETRY-UTILS] Retry configuration:', this.config);
   }
 
   /**
@@ -26,36 +32,53 @@ export class RetryableExporter {
     context: string = 'export'
   ): Promise<T> {
     if (!this.config.enabled) {
+      // console.log(`[RETRY-UTILS] Retries disabled for ${context}, executing once`);
       return operation();
     }
 
     let lastError: Error | null = null;
+    const startTime = Date.now();
+    
+    // console.log(`[RETRY-UTILS] Starting ${context} with ${this.config.maxAttempts} max attempts`);
     
     for (let attempt = 1; attempt <= this.config.maxAttempts; attempt++) {
+      // Safety check to prevent runaway retries
+      if (Date.now() - startTime > 120000) { // 2 minutes max
+        console.error(`[RETRY-UTILS] Aborting ${context} after 2 minutes to prevent infinite loop`);
+        break;
+      }
+
       try {
-        return await operation();
+        // console.log(`[RETRY-UTILS] ${context} attempt ${attempt}/${this.config.maxAttempts}`);
+        const result = await operation();
+        // console.log(`[RETRY-UTILS] ${context} succeeded on attempt ${attempt}`);
+        return result;
       } catch (error) {
         lastError = error as Error;
+        // console.error(`[RETRY-UTILS] ${context} attempt ${attempt} failed:`, error);
         
         // Don't retry on the last attempt
         if (attempt === this.config.maxAttempts) {
+          // console.log(`[RETRY-UTILS] Final attempt ${attempt} failed, giving up`);
           break;
         }
 
         const delay = this.calculateDelayWithJitter(attempt);
         
-        console.warn(
-          `🔄 ${context} attempt ${attempt}/${this.config.maxAttempts} failed, retrying in ${delay}ms:`,
-          error
-        );
+        // console.warn(
+        //   `${context} attempt ${attempt}/${this.config.maxAttempts} failed, retrying in ${delay}ms:`,
+        //   error
+        // );
 
         await this.sleep(delay);
       }
     }
 
-    throw new Error(
+    const finalError = new Error(
       `${context} failed after ${this.config.maxAttempts} attempts. Last error: ${lastError?.message}`
     );
+    // console.error(`[RETRY-UTILS] ${context} permanently failed:`, finalError);
+    throw finalError;
   }
 
   /**
@@ -163,7 +186,7 @@ export class RetryableOTLPExporter {
       
       resultCallback({ code: 0 });
     } catch (error) {
-      console.error('❌ OTLP export failed after all retries:', error);
+      console.error('OTLP export failed after all retries:', error);
       resultCallback({ 
         code: 1, 
         error: error instanceof Error ? error.message : 'Unknown error' 
@@ -210,7 +233,7 @@ export class RetryableOTLPMetricExporter {
       
       resultCallback({ code: 0 });
     } catch (error) {
-      console.error('❌ OTLP metric export failed after all retries:', error);
+      console.error('OTLP metric export failed after all retries:', error);
       resultCallback({ 
         code: 1, 
         error: error instanceof Error ? error.message : 'Unknown error' 

@@ -217,6 +217,37 @@ export interface LogsExporters {
 }
 
 /**
+ * Multi-exporter strategy for logs
+ */
+export interface MultiLogsExporters {
+  /** Strategy for multiple exporters */
+  strategy?: 'parallel' | 'fallback';
+  /** Individual exporter configurations with priorities */
+  exporters?: {
+    [key: string]: {
+      /** Exporter type */
+      type: 'otlp' | 'console' | 'custom';
+      /** Enable this exporter */
+      enabled?: boolean;
+      /** Priority (lower numbers = higher priority) */
+      priority?: number;
+      /** Only use as fallback */
+      fallbackOnly?: boolean;
+      /** OTLP specific config */
+      otlp?: LogsExporters['otlp'];
+      /** Console specific config */
+      console?: LogsExporters['console'];
+      /** Custom exporter class name or factory */
+      custom?: {
+        className?: string;
+        factory?: string;
+        options?: Record<string, any>;
+      };
+    };
+  };
+}
+
+/**
  * Metrics exporters configuration
  */
 export interface MetricsExporters {
@@ -255,8 +286,41 @@ export interface MetricsExporters {
 }
 
 /**
+ * Multi-exporter strategy for metrics
+ */
+export interface MultiMetricsExporters {
+  /** Strategy for multiple exporters */
+  strategy?: 'parallel' | 'fallback';
+  /** Individual exporter configurations with priorities */
+  exporters?: {
+    [key: string]: {
+      /** Exporter type */
+      type: 'otlp' | 'console' | 'prometheus' | 'custom';
+      /** Enable this exporter */
+      enabled?: boolean;
+      /** Priority (lower numbers = higher priority) */
+      priority?: number;
+      /** Only use as fallback */
+      fallbackOnly?: boolean;
+      /** OTLP specific config */
+      otlp?: MetricsExporters['otlp'];
+      /** Console specific config */
+      console?: MetricsExporters['console'];
+      /** Prometheus specific config */
+      prometheus?: MetricsExporters['prometheus'];
+      /** Custom exporter class name or factory */
+      custom?: {
+        className?: string;
+        factory?: string;
+        options?: Record<string, any>;
+      };
+    };
+  };
+}
+
+/**
  * Enhanced OpenTelemetryConfig with Logs and Metrics support
- * ✅ Fully backwards compatible with existing Jufab configurations
+ * Fully backwards compatible with existing Jufab configurations
  */
 export interface OpenTelemetryConfig {
   /** commonConfig */
@@ -274,17 +338,21 @@ export interface OpenTelemetryConfig {
   /** ignoreUrls */
   ignoreUrls?: IgnoreUrlsConfig;
   
-  // ✅ NEW: Logs configuration and exporters (zero migration required)
+  // NEW: Logs configuration and exporters (zero migration required)
   /** logsConfig: Configuration for structured logging */
   logsConfig?: LogsConfig;
-  /** logsExporters: Configure where logs are exported */
+  /** logsExporters: Configure where logs are exported (simple single/multi-exporter) */
   logsExporters?: LogsExporters;
+  /** multiLogsExporters: Advanced multi-exporter configuration with priorities and strategies */
+  multiLogsExporters?: MultiLogsExporters;
   
-  // ✅ NEW: Metrics configuration and exporters (zero migration required)
+  // NEW: Metrics configuration and exporters (zero migration required)
   /** metricsConfig: Configuration for metrics collection */
   metricsConfig?: MetricsConfig;
-  /** metricsExporters: Configure where metrics are exported */
+  /** metricsExporters: Configure where metrics are exported (simple single/multi-exporter) */
   metricsExporters?: MetricsExporters;
+  /** multiMetricsExporters: Advanced multi-exporter configuration with priorities and strategies */
+  multiMetricsExporters?: MultiMetricsExporters;
 }
 
 /** OTEL_CONFIG : Config injection */
@@ -298,7 +366,7 @@ export const OTEL_CUSTOM_SPAN = new InjectionToken<CustomSpan>('otelcol.custom-s
 
 export const OTEL_INSTRUMENTATION_PLUGINS = new InjectionToken<Instrumentation[]>('otelcol.instrumentation.plugins');
 
-// ✅ NEW: Injection tokens for logs and metrics
+// NEW: Injection tokens for logs and metrics
 /** Logs configuration injection token */
 export const OTEL_LOGS_CONFIG = new InjectionToken<LogsConfig>('otelcol.logs.config');
 

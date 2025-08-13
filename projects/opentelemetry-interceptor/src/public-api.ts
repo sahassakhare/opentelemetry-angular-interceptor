@@ -13,6 +13,22 @@ export { ZipkinExporterModule } from './lib/services/exporter/zipkin/zipkin-expo
 export { ZipkinExporterService } from './lib/services/exporter/zipkin/zipkin-exporter.service';
 export { NoopSpanExporterModule } from './lib/services/exporter/noop-exporter/noop-span-exporter.module';
 export { NoopSpanExporterService } from './lib/services/exporter/noop-exporter/noop-span-exporter.service';
+
+// NEW: Logs Exporters
+export { LogsOtelcolExporterModule } from './lib/services/exporter/logs-otelcol/logs-otelcol-exporter.module';
+export { LogsOtelcolExporterService } from './lib/services/exporter/logs-otelcol/logs-otelcol-exporter.service';
+export { LogsConsoleExporterModule } from './lib/services/exporter/logs-console/logs-console-exporter.module';
+export { LogsConsoleExporterService } from './lib/services/exporter/logs-console/logs-console-exporter.service';
+export { LogsNoopExporterModule } from './lib/services/exporter/logs-noop/logs-noop-exporter.module';
+export { LogsNoopExporterService } from './lib/services/exporter/logs-noop/logs-noop-exporter.service';
+
+// NEW: Metrics Exporters
+export { MetricsOtelcolExporterModule } from './lib/services/exporter/metrics-otelcol/metrics-otelcol-exporter.module';
+export { MetricsOtelcolExporterService } from './lib/services/exporter/metrics-otelcol/metrics-otelcol-exporter.service';
+export { MetricsConsoleExporterModule } from './lib/services/exporter/metrics-console/metrics-console-exporter.module';
+export { MetricsConsoleExporterService } from './lib/services/exporter/metrics-console/metrics-console-exporter.service';
+export { MetricsNoopExporterModule } from './lib/services/exporter/metrics-noop/metrics-noop-exporter.module';
+export { MetricsNoopExporterService } from './lib/services/exporter/metrics-noop/metrics-noop-exporter.service';
 // Propagator
 export { B3PropagatorModule } from './lib/services/propagator/b3-propagator/b3-propagator.module';
 export { CompositePropagatorModule } from './lib/services/propagator/composite-propagator/composite-propagator.module';
@@ -27,7 +43,17 @@ export { OtelWebTracerModule } from './lib/otel-webtracer.module';
 
 //Interface
 export { CustomSpan } from './lib/interceptor/custom-span.interface';
-export { OTEL_EXPORTER, IExporter } from './lib/services/exporter/exporter.interface';
+export { 
+  OTEL_EXPORTER, 
+  OTEL_EXPORTERS,
+  IExporter, 
+  OTEL_LOGS_EXPORTER, 
+  OTEL_LOGS_EXPORTERS,
+  ILogsExporter, 
+  OTEL_METRICS_EXPORTER, 
+  OTEL_METRICS_EXPORTERS,
+  IMetricsExporter 
+} from './lib/services/exporter/exporter.interface';
 export { OTEL_PROPAGATOR, IPropagator } from './lib/services/propagator/propagator.interface';
 
 // Configuration
@@ -44,11 +70,13 @@ export {
   OTEL_LOGGER,
   OTEL_CUSTOM_SPAN,
   OTEL_INSTRUMENTATION_PLUGINS,
-  // ✅ NEW: Enhanced configuration interfaces
+  // NEW: Enhanced configuration interfaces
   LogsConfig,
   LogsExporters,
+  MultiLogsExporters,
   MetricsConfig,
   MetricsExporters,
+  MultiMetricsExporters,
   RetryConfig,
   OTEL_LOGS_CONFIG,
   OTEL_LOGS_PROVIDER,
@@ -56,7 +84,7 @@ export {
   OTEL_METRICS_PROVIDER
 } from './lib/configuration/opentelemetry-config';
 
-// ✅ NEW: Logs and Metrics Services
+// NEW: Logs and Metrics Services
 export {
   OpenTelemetryLogsService,
   OpenTelemetryErrorHandler,
@@ -68,7 +96,22 @@ export {
   metricsProviderFactory
 } from './lib/services/metrics';
 
-// ✅ NEW: Retry utilities
+// NEW: Modular Provider Factories
+export { logsProviderModularFactory } from './lib/services/logs/logs-provider-modular.factory';
+export { metricsProviderModularFactory } from './lib/services/metrics/metrics-provider-modular.factory';
+
+// NEW: Multi-Exporter Provider Factories  
+export { logsProviderMultiFactory } from './lib/services/logs/logs-provider-multi.factory';
+export { metricsProviderMultiFactory } from './lib/services/metrics/metrics-provider-multi.factory';
+
+// NEW: Composite Exporters
+export { 
+  CompositeSpanExporter,
+  CompositeLogRecordExporter,
+  CompositeMetricReader
+} from './lib/services/exporter/composite';
+
+// NEW: Retry utilities
 export {
   RetryableExporter,
   RetryableOTLPExporter,
