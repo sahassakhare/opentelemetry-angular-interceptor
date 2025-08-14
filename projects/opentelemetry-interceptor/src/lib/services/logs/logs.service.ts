@@ -63,11 +63,18 @@ export class OpenTelemetryLogsService {
       const activeSpan = trace.getActiveSpan();
       if (activeSpan) {
         const spanContext = activeSpan.spanContext();
+        // console.log('[LOGS-SERVICE] Found active span:', {
+        //   traceId: spanContext.traceId,
+        //   spanId: spanContext.spanId,
+        //   traceFlags: spanContext.traceFlags
+        // });
         return {
           trace_id: spanContext.traceId,
           span_id: spanContext.spanId,
           trace_flags: spanContext.traceFlags.toString()
         };
+      } else {
+        // console.log('[LOGS-SERVICE] No active span found - logs will not have trace correlation');
       }
     } catch (error) {
       console.warn('Failed to get trace context:', error);

@@ -34,6 +34,7 @@ import { OpenTelemetryLogsService } from '../../../../../opentelemetry-intercept
         <div class="button-group">
           <button (click)="makeHttpRequestWithLogs()" class="btn btn-success">HTTP Request + Logs</button>
           <button (click)="simulateWorkflow()" class="btn btn-success">Simulate Workflow</button>
+          <button (click)="testTraceCorrelation()" class="btn btn-info">Test Trace Fix</button>
         </div>
       </div>
 
@@ -248,6 +249,45 @@ export class LogsDemoComponent implements OnInit {
         cohort: 'demo-users'
       }
     });
+  }
+
+  // Test trace correlation fix
+  testTraceCorrelation() {
+    this.otelLogs.info('Testing trace correlation fix - making HTTP request...');
+    
+    this.http.get('https://jsonplaceholder.typicode.com/posts/1').subscribe({
+      next: (data) => {
+        this.otelLogs.info('INSIDE HTTP REQUEST: This should have trace_id and span_id', {
+          test: 'trace-correlation-fix',
+          location: 'inside-http-observable',
+          timestamp: new Date().toISOString()
+        });
+        
+        // Test async scenario
+        setTimeout(() => {
+          this.otelLogs.info('ASYNC AFTER HTTP: This might not have trace_id (timing dependent)', {
+            test: 'trace-correlation-fix',
+            location: 'async-after-http',
+            timestamp: new Date().toISOString()
+          });
+        }, 10);
+      },
+      error: (error) => {
+        this.otelLogs.error('HTTP request failed during trace test', {
+          test: 'trace-correlation-fix',
+          error: error.message
+        });
+      }
+    });
+    
+    // Test outside HTTP context
+    setTimeout(() => {
+      this.otelLogs.info('OUTSIDE HTTP CONTEXT: This should NOT have trace_id', {
+        test: 'trace-correlation-fix',
+        location: 'outside-http-context',
+        timestamp: new Date().toISOString()
+      });
+    }, 100);
   }
 
   // HTTP requests with logging

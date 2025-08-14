@@ -114,6 +114,12 @@ export class OpenTelemetryHttpInterceptor implements HttpInterceptor {
       propagator: this.propagatorService.getPropagator(),
       contextManager: this.contextManager
     });
+    
+    // CRITICAL FIX: Register tracer provider globally for logs trace correlation
+    // This bridges the interceptor's tracer to the global OpenTelemetry context
+    // enabling logs service to access active span information
+    api.trace.setGlobalTracerProvider(this.tracer);
+    
     this.logBody = config.commonConfig.logBody;
     api.diag.setLogger(logger, config.commonConfig.logLevel);
   }
