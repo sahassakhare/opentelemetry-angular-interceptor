@@ -21,14 +21,11 @@ export class LogsOtelcolExporterService implements ILogsExporter {
    * @returns LogRecordExporter configured for OTLP
    */
   getExporter(): LogRecordExporter {
-    if (!this.otelConfig?.logsExporters?.otlp) {
-      throw new Error('OTLP logs exporter configuration is required');
-    }
-
-    const logsExporterConfig = this.otelConfig.logsExporters.otlp;
+    // Support both specific exporter config and fallback to general config
+    const logsExporterConfig = this.otelConfig?.logsExporters?.otlp || {};
     
     // Auto-inherit URL from main otelcolConfig if not specified
-    const baseUrl = logsExporterConfig.url || this.otelConfig.otelcolConfig?.url || 'http://localhost:4318';
+    const baseUrl = logsExporterConfig.url || this.otelConfig?.otelcolConfig?.url || 'http://localhost:4318';
     const logsUrl = baseUrl.endsWith('/v1/traces') 
       ? baseUrl.replace('/v1/traces', '/v1/logs')
       : `${baseUrl}/v1/logs`;
@@ -37,7 +34,7 @@ export class LogsOtelcolExporterService implements ILogsExporter {
     const otlpExporter = new OTLPLogExporter({
       url: logsUrl,
       headers: {
-        ...this.otelConfig.otelcolConfig?.headers,
+        ...this.otelConfig?.otelcolConfig?.headers,
         ...logsExporterConfig.headers
       },
       timeoutMillis: logsExporterConfig.timeoutMs || 10000

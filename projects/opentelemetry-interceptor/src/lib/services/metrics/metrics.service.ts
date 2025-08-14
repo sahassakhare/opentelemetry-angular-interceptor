@@ -104,8 +104,8 @@ export class OpenTelemetryMetricsService implements OnDestroy {
    * Initialize Web Vitals specific metrics
    */
   private initializeWebVitalsMetrics(): void {
-    const boundaries = this.config.histogramBoundariesMs || [100, 300, 1000, 3000, 5000];
-    const boundariesSeconds = boundaries.map(ms => ms / 1000);
+    // const boundaries = this.config.histogramBoundariesMs || [100, 300, 1000, 3000, 5000];
+    // const boundariesSeconds = boundaries.map(ms => ms / 1000);
 
     this.lcpHistogram = this.meter.createHistogram('browser.web_vital.lcp', {
       description: 'Largest Contentful Paint',
@@ -141,6 +141,7 @@ export class OpenTelemetryMetricsService implements OnDestroy {
    */
   private async initializeWebVitals(): Promise<void> {
     if (!this.config.webVitals || !isPlatformBrowser(this.platformId)) {
+      // console.log('Web Vitals disabled or not in browser environment');
       return;
     }
 
@@ -148,24 +149,30 @@ export class OpenTelemetryMetricsService implements OnDestroy {
       // Dynamically import web-vitals
       const { onCLS, onLCP, onINP, onFCP, onTTFB } = await import('web-vitals');
 
+      // console.log('Web Vitals imported successfully, setting up observers...');
+
       // Largest Contentful Paint
       onLCP((metric: WebVitalMetric) => {
+        // console.log('LCP metric received:', metric);
         this.recordWebVital('lcp', metric);
       });
 
       // Cumulative Layout Shift
       onCLS((metric: WebVitalMetric) => {
+        // console.log('CLS metric received:', metric);
         this.recordWebVital('cls', metric);
       });
 
       // Interaction to Next Paint
       onINP((metric: WebVitalMetric) => {
+        // console.log('INP metric received:', metric);
         this.recordWebVital('inp', metric);
       });
 
       // First Contentful Paint
       if (this.config.collectFCP && this.fcpHistogram) {
         onFCP((metric: WebVitalMetric) => {
+          // console.log('FCP metric received:', metric);
           this.recordWebVital('fcp', metric);
         });
       }
@@ -173,11 +180,12 @@ export class OpenTelemetryMetricsService implements OnDestroy {
       // Time to First Byte
       if (this.config.collectTTFB && this.ttfbHistogram) {
         onTTFB((metric: WebVitalMetric) => {
+          // console.log('TTFB metric received:', metric);
           this.recordWebVital('ttfb', metric);
         });
       }
 
-      console.log('Web Vitals collection initialized');
+      // console.log('Web Vitals collection initialized with all observers');
     } catch (error) {
       console.warn('Web Vitals not available:', error);
     }

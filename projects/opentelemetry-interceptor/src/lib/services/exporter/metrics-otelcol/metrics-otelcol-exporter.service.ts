@@ -21,14 +21,11 @@ export class MetricsOtelcolExporterService implements IMetricsExporter {
    * @returns MetricReader configured for OTLP
    */
   getReader(): MetricReader {
-    if (!this.otelConfig?.metricsExporters?.otlp) {
-      throw new Error('OTLP metrics exporter configuration is required');
-    }
-
-    const metricsExporterConfig = this.otelConfig.metricsExporters.otlp;
+    // Support both specific exporter config and fallback to general config
+    const metricsExporterConfig = this.otelConfig?.metricsExporters?.otlp || {};
     
     // Auto-inherit URL from main otelcolConfig if not specified
-    const baseUrl = metricsExporterConfig.url || this.otelConfig.otelcolConfig?.url || 'http://localhost:4318';
+    const baseUrl = metricsExporterConfig.url || this.otelConfig?.otelcolConfig?.url || 'http://localhost:4318';
     const metricsUrl = baseUrl.endsWith('/v1/traces') 
       ? baseUrl.replace('/v1/traces', '/v1/metrics')
       : `${baseUrl}/v1/metrics`;
@@ -37,7 +34,7 @@ export class MetricsOtelcolExporterService implements IMetricsExporter {
     const otlpExporter = new OTLPMetricExporter({
       url: metricsUrl,
       headers: {
-        ...this.otelConfig.otelcolConfig?.headers,
+        ...this.otelConfig?.otelcolConfig?.headers,
         ...metricsExporterConfig.headers
       },
       timeoutMillis: metricsExporterConfig.timeoutMs || 10000
@@ -52,7 +49,7 @@ export class MetricsOtelcolExporterService implements IMetricsExporter {
     return new PeriodicExportingMetricReader({
       exporter: finalExporter,
       exportIntervalMillis: metricsExporterConfig.intervalMs || 
-                           this.otelConfig.metricsConfig?.interval || 
+                           this.otelConfig?.metricsConfig?.interval || 
                            15000
     });
   }

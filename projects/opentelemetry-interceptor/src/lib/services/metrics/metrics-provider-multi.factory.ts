@@ -1,4 +1,4 @@
-import { PLATFORM_ID, Injector, Optional } from '@angular/core';
+import { Injector } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { MeterProvider } from '@opentelemetry/api';
 import { MeterProvider as SDKMeterProvider } from '@opentelemetry/sdk-metrics';
@@ -22,13 +22,16 @@ export function createMetricsProviderMulti(
   platformId: Object,
   injector: Injector
 ): MeterProvider | null {
+  // console.log('[MetricsProviderMulti] Creating metrics provider...');
+  // console.log('[MetricsProviderMulti] Platform is browser:', isPlatformBrowser(platformId));
+  // console.log('[MetricsProviderMulti] Metrics enabled:', config.metricsConfig?.enabled);
+  
   if (!isPlatformBrowser(platformId) || !config.metricsConfig?.enabled) {
+    // console.log('[MetricsProviderMulti] Metrics provider not created (not browser or disabled)');
     return null;
   }
 
   try {
-    const metricsConfig = config.metricsConfig;
-
     // Create resource with service information
     const resource = Resource.default().merge(
       new Resource({
@@ -38,8 +41,12 @@ export function createMetricsProviderMulti(
       })
     );
 
+    // console.log('[MetricsProviderMulti] Resource created:', resource.attributes);
+
     // Get metric readers from dependency injection
-    const readers = getMetricsReadersFromDI(injector, config);
+    const readers = getMetricsReadersFromDI(injector);
+    
+    // console.log('[MetricsProviderMulti] Readers found:', readers.length);
     
     // Create MeterProvider with readers
     const meterProvider = new SDKMeterProvider({
@@ -50,7 +57,7 @@ export function createMetricsProviderMulti(
     if (readers.length > 0) {
       console.log(`OpenTelemetry Metrics Provider initialized with ${readers.length} reader(s)`);
     } else {
-      console.warn('No metrics readers found');
+      console.warn('No metrics readers found - metrics will not be exported!');
     }
 
     return meterProvider;
@@ -65,45 +72,58 @@ export function createMetricsProviderMulti(
  * Get metric readers from dependency injection
  * Tries multiple exporters first, then falls back to single exporter
  */
-function getMetricsReadersFromDI(injector: Injector, config: OpenTelemetryConfig): any[] {
+function getMetricsReadersFromDI(injector: Injector): any[] {
   const readers: any[] = [];
+
+  // console.log('[MetricsProviderMulti] Looking for metric exporters in DI...');
 
   try {
     // Try to get multiple exporters first
     const multiExporters = injector.get<IMetricsExporter[]>(OTEL_METRICS_EXPORTERS, null);
+    // console.log('[MetricsProviderMulti] Multi-exporters found:', multiExporters?.length || 0);
+    
     if (multiExporters && multiExporters.length > 0) {
-      multiExporters.forEach(metricsExporter => {
+      multiExporters.forEach((metricsExporter, index) => {
         try {
+          // console.log(`[MetricsProviderMulti] Getting reader from exporter ${index + 1}...`);
           const reader = metricsExporter.getReader();
           if (reader) {
             readers.push(reader);
+            // console.log(`[MetricsProviderMulti] Successfully added reader ${index + 1}`);
           }
         } catch (error) {
-          console.warn('Failed to get reader from multi-provider:', error);
+          console.warn(`Failed to get reader from metrics exporter ${index + 1}:`, error);
         }
       });
       
       if (readers.length > 0) {
-        console.log(`Found ${readers.length} metric readers via multi-provider injection`);
+        // console.log(`[MetricsProviderMulti] Found ${readers.length} metric readers via multi-provider injection`);
         return readers;
       }
     }
   } catch (error) {
-    // Multi-exporters not available, try single exporter
+    // console.log('[MetricsProviderMulti] Multi-exporters not available, trying single exporter...', error);
   }
 
   try {
     // Fallback to single exporter (backwards compatibility)
     const singleExporter = injector.get<IMetricsExporter>(OTEL_METRICS_EXPORTER, null);
     if (singleExporter) {
+      // console.log('[MetricsProviderMulti] Single exporter found, getting reader...');
       const reader = singleExporter.getReader();
       if (reader) {
         readers.push(reader);
-        console.log('Found 1 metric reader via single-provider injection');
+        // console.log('[MetricsProviderMulti] Found 1 metric reader via single-provider injection');
       }
+    } else {
+      // console.log('[MetricsProviderMulti] No single exporter found');
     }
   } catch (error) {
-    console.warn('No metrics exporters found in dependency injection:', error);
+    console.warn('Error getting metrics exporter:', error);
+  }
+
+  if (readers.length === 0) {
+    console.warn('No metrics exporters found in dependency injection!');
   }
 
   return readers;
