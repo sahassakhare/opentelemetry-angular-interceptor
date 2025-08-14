@@ -182,8 +182,14 @@ export class OpenTelemetryHttpInterceptor implements HttpInterceptor {
           }
         ),
         finalize(() => {
-          span.end();
-          this.contextManager.disable();
+          // Enhanced context handling: Keep context active briefly for async operations
+          // This allows logs and other operations triggered by the HTTP response
+          // to still have access to the span context
+          setTimeout(() => {
+            span.end();
+            // Don't disable context manager completely as it's shared
+            // Just let the span end naturally
+          }, 250); // 250ms grace period for async operations
         })
       );
     }

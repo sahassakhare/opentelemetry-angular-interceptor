@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { OpenTelemetryLogsService } from '../../../../../opentelemetry-interceptor/src/public-api';
+import { OpenTelemetryLogsService, TraceContextService } from '../../../../../opentelemetry-interceptor/src/public-api';
 
 @Component({
   selector: 'app-logs-demo',
@@ -35,6 +35,7 @@ import { OpenTelemetryLogsService } from '../../../../../opentelemetry-intercept
           <button (click)="makeHttpRequestWithLogs()" class="btn btn-success">HTTP Request + Logs</button>
           <button (click)="simulateWorkflow()" class="btn btn-success">Simulate Workflow</button>
           <button (click)="testTraceCorrelation()" class="btn btn-info">Test Trace Fix</button>
+          <button (click)="testPhase2Enhancement()" class="btn btn-warning">Test Phase 2 (Enhanced)</button>
         </div>
       </div>
 
@@ -149,7 +150,8 @@ export class LogsDemoComponent implements OnInit {
   
   constructor(
     private otelLogs: OpenTelemetryLogsService,
-    private http: HttpClient
+    private http: HttpClient,
+    private traceContext: TraceContextService
   ) {}
 
   ngOnInit() {
@@ -160,12 +162,19 @@ export class LogsDemoComponent implements OnInit {
     });
   }
 
-  // Basic logging methods
+  // Basic logging methods (Enhanced with Phase 2)
   logDebug() {
-    this.otelLogs.debug('This is a debug message', {
-      level: 'debug',
-      source: 'user-interaction',
-      buttonClicked: 'debug-log'
+    // Use enhanced trace context for UI interactions
+    this.traceContext.withTraceContext('debug-log-action', () => {
+      this.otelLogs.debug('This is a debug message (Phase 2 Enhanced)', {
+        level: 'debug',
+        source: 'user-interaction',
+        buttonClicked: 'debug-log',
+        enhancement: 'phase2-trace-context'
+      });
+    }, {
+      'ui.action': 'debug-log-button',
+      'ui.component': 'logs-demo'
     });
   }
 
@@ -248,6 +257,102 @@ export class LogsDemoComponent implements OnInit {
         experiment: 'enhanced-otel',
         cohort: 'demo-users'
       }
+    });
+  }
+
+  // Test Phase 2 enhanced trace correlation
+  testPhase2Enhancement() {
+    this.otelLogs.info('Testing Phase 2: Enhanced trace correlation for UI interactions');
+
+    // Test 1: Manual trace context for UI interaction
+    this.traceContext.withTraceContext('ui-button-click', () => {
+      this.otelLogs.info('PHASE 2 - UI INTERACTION: This should have trace_id and span_id', {
+        test: 'phase2-enhancement',
+        scenario: 'ui-interaction-with-manual-trace',
+        timestamp: new Date().toISOString()
+      });
+
+      // Test nested async operation within trace context
+      setTimeout(() => {
+        this.otelLogs.info('PHASE 2 - ASYNC WITHIN TRACE: This should still have trace correlation', {
+          test: 'phase2-enhancement',
+          scenario: 'async-within-trace-context',
+          timestamp: new Date().toISOString()
+        });
+      }, 50);
+    }, {
+      'ui.component': 'logs-demo',
+      'ui.action': 'phase2-test-button',
+      'ui.user_id': 'demo-user'
+    });
+
+    // Test 2: Enhanced logging methods with trace context
+    this.logWithEnhancedTrace();
+
+    // Test 3: Async operation with manual trace
+    this.testAsyncWithTrace();
+  }
+
+  // Enhanced logging with manual trace context
+  private logWithEnhancedTrace() {
+    this.traceContext.withTraceContext('enhanced-logging', () => {
+      this.otelLogs.info('PHASE 2 - ENHANCED LOGGING: Manual trace context applied', {
+        test: 'phase2-enhancement',
+        scenario: 'enhanced-logging-method',
+        features: ['manual-trace', 'ui-correlation', 'async-support']
+      });
+    }, {
+      'operation.type': 'enhanced-logging',
+      'operation.category': 'demo'
+    });
+  }
+
+  // Test async operations with trace context
+  private async testAsyncWithTrace() {
+    try {
+      await this.traceContext.withTraceContextAsync('async-operation', async () => {
+        // Simulate async work
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        this.otelLogs.info('PHASE 2 - ASYNC OPERATION: Trace context preserved in async', {
+          test: 'phase2-enhancement',
+          scenario: 'async-operation-with-trace',
+          duration_ms: 100
+        });
+
+        // Test multiple async operations
+        await Promise.all([
+          this.simulateAsyncTask('task-1', 50),
+          this.simulateAsyncTask('task-2', 75),
+          this.simulateAsyncTask('task-3', 25)
+        ]);
+
+        this.otelLogs.info('PHASE 2 - PARALLEL ASYNC: All parallel tasks completed', {
+          test: 'phase2-enhancement',
+          scenario: 'parallel-async-operations',
+          tasks_completed: 3
+        });
+      }, {
+        'async.operation': 'parallel-tasks',
+        'async.task_count': 3
+      });
+    } catch (error) {
+      this.otelLogs.error('Phase 2 async test failed', {
+        test: 'phase2-enhancement',
+        error: error
+      });
+    }
+  }
+
+  // Simulate an async task within trace context
+  private async simulateAsyncTask(taskId: string, delayMs: number): Promise<void> {
+    await new Promise(resolve => setTimeout(resolve, delayMs));
+    
+    this.otelLogs.info(`PHASE 2 - ASYNC TASK: ${taskId} completed`, {
+      test: 'phase2-enhancement',
+      scenario: 'individual-async-task',
+      task_id: taskId,
+      duration_ms: delayMs
     });
   }
 

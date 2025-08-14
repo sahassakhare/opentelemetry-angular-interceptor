@@ -117,3 +117,6 @@ export {
   RetryableOTLPExporter,
   RetryableOTLPMetricExporter
 } from './lib/services/retry-utils';
+
+// NEW: Enhanced Trace Context Service
+export { TraceContextService } from './lib/services/trace-context.service';
