@@ -78,10 +78,15 @@ export {
   MetricsExporters,
   MultiMetricsExporters,
   RetryConfig,
+  SpanTimeoutConfig,
   OTEL_LOGS_CONFIG,
   OTEL_LOGS_PROVIDER,
   OTEL_METRICS_CONFIG,
-  OTEL_METRICS_PROVIDER
+  OTEL_METRICS_PROVIDER,
+  // NEW: Service Worker configuration and injection tokens
+  ServiceWorkerConfig,
+  OTEL_SERVICE_WORKER_CONFIG,
+  OTEL_SERVICE_WORKER_BRIDGE
 } from './lib/configuration/opentelemetry-config';
 
 // NEW: Logs and Metrics Services
@@ -118,5 +123,29 @@ export {
   RetryableOTLPMetricExporter
 } from './lib/services/retry-utils';
 
-// NEW: Enhanced Trace Context Service
+// NEW: Enhanced Trace Context Service and Span Timeout Management
 export { TraceContextService } from './lib/services/trace-context.service';
+
+// NEW: Service Worker Trace Context Support
+export { 
+  TraceContextSerializer,
+  SerializedTraceContext,
+  ServiceWorkerMessage
+} from './lib/services/trace-context-serializer.service';
+
+export { 
+  OfflineTraceStorage,
+  OfflineOperation,
+  BackgroundSyncOperation,
+  OfflineStorageConfig
+} from './lib/services/offline-trace-storage.service';
+
+export { 
+  ServiceWorkerTraceBridge,
+  ServiceWorkerRegistrationResult
+} from './lib/services/service-worker-trace-bridge.service';
+
+export { 
+  ServiceWorkerRegistrationHelper,
+  SERVICE_WORKER_SCRIPT_TEMPLATE
+} from './lib/services/service-worker-registration.helper';

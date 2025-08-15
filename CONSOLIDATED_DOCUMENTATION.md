@@ -50,9 +50,9 @@ Angular Application
 
 | Signal | Capability | Status |
 |--------|------------|--------|
-| **Traces** | HTTP requests, custom spans, distributed tracing | ✅ Ready |
-| **Logs** | Structured logging with trace correlation | ✅ Ready |
-| **Metrics** | Web Vitals, custom counters/histograms | ✅ Ready |
+| **Traces** | HTTP requests, custom spans, distributed tracing | Ready |
+| **Logs** | Structured logging with trace correlation | Ready |
+| **Metrics** | Web Vitals, custom counters/histograms | Ready |
 
 ### Enhanced Capabilities
 

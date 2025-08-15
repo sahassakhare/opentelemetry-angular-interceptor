@@ -179,84 +179,129 @@ export class LogsDemoComponent implements OnInit {
   }
 
   logInfo() {
-    this.otelLogs.info('This is an info message', {
-      level: 'info',
-      source: 'user-interaction',
-      buttonClicked: 'info-log'
+    // Use enhanced trace context for UI interactions
+    this.traceContext.withTraceContext('info-log-action', () => {
+      this.otelLogs.info('This is an info message (Phase 2 Enhanced)', {
+        level: 'info',
+        source: 'user-interaction',
+        buttonClicked: 'info-log',
+        enhancement: 'phase2-trace-context'
+      });
+    }, {
+      'ui.action': 'info-log-button',
+      'ui.component': 'logs-demo'
     });
   }
 
   logWarn() {
-    this.otelLogs.warn('This is a warning message', {
-      level: 'warn',
-      source: 'user-interaction',
-      buttonClicked: 'warn-log',
-      potential_issue: 'demonstration-warning'
+    // Use enhanced trace context for UI interactions
+    this.traceContext.withTraceContext('warn-log-action', () => {
+      this.otelLogs.warn('This is a warning message (Phase 2 Enhanced)', {
+        level: 'warn',
+        source: 'user-interaction',
+        buttonClicked: 'warn-log',
+        potential_issue: 'demonstration-warning',
+        enhancement: 'phase2-trace-context'
+      });
+    }, {
+      'ui.action': 'warn-log-button',
+      'ui.component': 'logs-demo'
     });
   }
 
   logError() {
-    this.otelLogs.error('This is an error message', {
-      level: 'error',
-      source: 'user-interaction',
-      buttonClicked: 'error-log',
-      error_type: 'demonstration-error'
+    // Use enhanced trace context for UI interactions
+    this.traceContext.withTraceContext('error-log-action', () => {
+      this.otelLogs.error('This is an error message (Phase 2 Enhanced)', {
+        level: 'error',
+        source: 'user-interaction',
+        buttonClicked: 'error-log',
+        error_type: 'demonstration-error',
+        enhancement: 'phase2-trace-context'
+      });
+    }, {
+      'ui.action': 'error-log-button',
+      'ui.component': 'logs-demo'
     });
   }
 
   // Logging with rich context
   logWithAttributes() {
-    this.otelLogs.info('User performed action with rich context', {
-      userId: 'demo-user-123',
-      sessionId: 'session-' + Math.random().toString(36).substr(2, 9),
-      action: 'log-with-attributes',
-      timestamp: new Date().toISOString(),
-      browser: navigator.userAgent,
-      url: window.location.href,
-      metadata: {
-        demo: true,
-        version: '1.0.0'
-      }
+    // Use enhanced trace context for UI interactions
+    this.traceContext.withTraceContext('log-with-attributes', () => {
+      this.otelLogs.info('User performed action with rich context (Phase 2 Enhanced)', {
+        userId: 'demo-user-123',
+        sessionId: 'session-' + Math.random().toString(36).substr(2, 9),
+        action: 'log-with-attributes',
+        timestamp: new Date().toISOString(),
+        browser: navigator.userAgent,
+        url: window.location.href,
+        enhancement: 'phase2-trace-context',
+        metadata: {
+          demo: true,
+          version: '1.0.0'
+        }
+      });
+    }, {
+      'ui.action': 'log-with-attributes-button',
+      'ui.component': 'logs-demo',
+      'ui.session': 'demo-session'
     });
   }
 
   logUserAction() {
-    this.otelLogs.info('User action: button click', {
-      user: {
-        id: 'demo-user-123',
-        role: 'demo-user',
-        preferences: { theme: 'light', language: 'en' }
-      },
-      action: {
-        type: 'click',
-        target: 'log-user-action-button',
-        category: 'user-interaction'
-      },
-      context: {
-        page: '/logs',
-        section: 'logs-demo',
-        timestamp: Date.now()
-      }
+    // Use enhanced trace context for UI interactions
+    this.traceContext.withTraceContext('user-action-log', () => {
+      this.otelLogs.info('User action: button click (Phase 2 Enhanced)', {
+        user: {
+          id: 'demo-user-123',
+          role: 'demo-user',
+          preferences: { theme: 'light', language: 'en' }
+        },
+        action: {
+          type: 'click',
+          target: 'log-user-action-button',
+          category: 'user-interaction'
+        },
+        context: {
+          page: '/logs',
+          section: 'logs-demo',
+          timestamp: Date.now()
+        },
+        enhancement: 'phase2-trace-context'
+      });
+    }, {
+      'ui.action': 'user-action-button',
+      'ui.component': 'logs-demo',
+      'user.id': 'demo-user-123'
     });
   }
 
   logBusinessEvent() {
-    this.otelLogs.info('Business event: demo interaction', {
-      event: {
-        type: 'demo_interaction',
-        category: 'engagement',
-        value: 1
-      },
-      metrics: {
-        session_duration: Math.floor(Math.random() * 300000), // 0-5 minutes
-        page_views: Math.floor(Math.random() * 10) + 1,
-        interactions: Math.floor(Math.random() * 50) + 1
-      },
-      business: {
-        feature: 'logs-demo',
-        experiment: 'enhanced-otel',
-        cohort: 'demo-users'
-      }
+    // Use enhanced trace context for UI interactions
+    this.traceContext.withTraceContext('business-event-log', () => {
+      this.otelLogs.info('Business event: demo interaction (Phase 2 Enhanced)', {
+        event: {
+          type: 'demo_interaction',
+          category: 'engagement',
+          value: 1
+        },
+        metrics: {
+          session_duration: Math.floor(Math.random() * 300000), // 0-5 minutes
+          page_views: Math.floor(Math.random() * 10) + 1,
+          interactions: Math.floor(Math.random() * 50) + 1
+        },
+        business: {
+          feature: 'logs-demo',
+          experiment: 'enhanced-otel',
+          cohort: 'demo-users'
+        },
+        enhancement: 'phase2-trace-context'
+      });
+    }, {
+      'ui.action': 'business-event-button',
+      'ui.component': 'logs-demo',
+      'business.event': 'demo_interaction'
     });
   }
 

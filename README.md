@@ -1,4 +1,4 @@
-# OpenTelemetry Angular Interceptor
+# OpenTelemetry Angular Interceptor (Enhanced Edition)
 
 @jufab/opentelemetry-angular-interceptor is an Angular Library to deploy [OpenTelemetry](https://opentelemetry.io/) in your Angular application
 
@@ -10,6 +10,31 @@ More info : https://jufab.github.io/opentelemetry-angular-interceptor/
 
 [![npm version](https://badge.fury.io/js/%40jufab%2Fopentelemetry-angular-interceptor.svg)](https://badge.fury.io/js/%40jufab%2Fopentelemetry-angular-interceptor)
 [![codecov](https://codecov.io/gh/jufab/opentelemetry-angular-interceptor/branch/master/graph/badge.svg)](https://codecov.io/gh/jufab/opentelemetry-angular-interceptor)
+
+## New Production-Ready Features
+
+### Enhanced Trace Correlation
+- **Complete trace correlation** between traces, logs, and metrics
+- **UI interaction tracing** with manual context creation
+- **Async operation support** with context preservation
+- **Service worker integration** for offline operations
+
+### Memory Safety & Performance
+- **Automatic span timeout management** preventing memory leaks
+- **Thread-safe context isolation** eliminating race conditions
+- **Memory-bounded rate limiting** with sliding windows
+- **LRU eviction** and automatic cleanup
+
+### Enterprise Features
+- **Comprehensive monitoring** with real-time statistics
+- **Dynamic configuration** with hot-reload support
+- **Production-grade error handling** and recovery
+- **Offline operation support** with trace preservation
+
+**New Documentation:**
+- [Production Enhancements Guide](./PRODUCTION-ENHANCEMENTS.md)
+- [Trace Correlation Guide](./TRACE-CORRELATION-GUIDE.md)
+- [Service Worker Integration](./SERVICE-WORKER-INTEGRATION.md)
 
 ## Table of contents
 

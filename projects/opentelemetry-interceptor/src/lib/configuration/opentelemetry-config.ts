@@ -152,6 +152,14 @@ export interface LogsConfig {
     maxPerMinute?: number;
     /** Per-severity rate limits */
     perSeverity?: Partial<Record<'debug' | 'info' | 'warn' | 'error', number>>;
+    /** Cleanup interval for expired buckets in milliseconds (default: 300000 = 5 minutes) */
+    cleanupIntervalMs?: number;
+    /** Memory pressure threshold in MB (default: 100) */
+    memoryThresholdMB?: number;
+    /** Maximum buckets per severity level (default: 100) */
+    maxBucketsPerLevel?: number;
+    /** Sliding window duration in milliseconds (default: 60000 = 1 minute) */
+    slidingWindowMs?: number;
   };
   /** PII redaction configuration */
   redact?: {
@@ -319,6 +327,84 @@ export interface MultiMetricsExporters {
 }
 
 /**
+ * Service Worker configuration for trace context support
+ */
+export interface ServiceWorkerConfig {
+  /** Enable service worker trace context integration */
+  enabled?: boolean;
+  /** Service worker script URL */
+  scriptUrl?: string;
+  /** Service worker scope */
+  scope?: string;
+  /** Registration options */
+  registrationOptions?: {
+    /** Update via cache mode */
+    updateViaCache?: 'imports' | 'all' | 'none';
+  };
+  /** Trace context configuration */
+  traceContext?: {
+    /** Enable trace context propagation */
+    enabled?: boolean;
+    /** CORS headers to include for trace propagation */
+    corsHeaders?: string[];
+    /** Background sync configuration */
+    backgroundSync?: {
+      /** Enable background sync trace context */
+      enabled?: boolean;
+      /** Background sync tags to handle */
+      tags?: string[];
+    };
+    /** Push notification configuration */
+    pushNotifications?: {
+      /** Enable push notification trace context */
+      enabled?: boolean;
+      /** Trace notification click events */
+      traceNotificationClicks?: boolean;
+    };
+    /** Cache operation configuration */
+    cacheOperations?: {
+      /** Enable cache operation tracing */
+      enabled?: boolean;
+      /** Trace headers to include in cached requests */
+      traceHeaders?: string[];
+    };
+  };
+  /** Offline storage configuration */
+  offlineStorage?: {
+    /** Maximum number of stored operations */
+    maxOperations?: number;
+    /** Maximum age for stored operations (milliseconds) */
+    maxAge?: number;
+    /** Storage key prefix */
+    storagePrefix?: string;
+    /** Enable IndexedDB storage */
+    enableIndexedDB?: boolean;
+    /** Enable localStorage fallback */
+    enableLocalStorage?: boolean;
+  };
+}
+
+/**
+ * Span timeout configuration for memory leak prevention
+ */
+export interface SpanTimeoutConfig {
+  /** Default timeout for HTTP spans in milliseconds (default: 30000) */
+  httpTimeoutMs?: number;
+  /** Default timeout for UI/manual spans in milliseconds (default: 10000) */
+  uiTimeoutMs?: number;
+  /** Default timeout for manual spans in milliseconds (default: 60000) */
+  manualTimeoutMs?: number;
+  /** Enable/disable timeout management (default: true) */
+  enabled?: boolean;
+  /** Memory leak detection interval in milliseconds (default: 60000) */
+  leakDetectionIntervalMs?: number;
+  /** Enable memory usage monitoring (default: true) */
+  memoryMonitoring?: boolean;
+  /** Maximum number of concurrent active spans (default: 1000) */
+  maxActiveSpans?: number;
+}
+
+/**
  * Enhanced OpenTelemetryConfig with Logs and Metrics support
  * Fully backwards compatible with existing Jufab configurations
  */
@@ -338,6 +424,10 @@ export interface OpenTelemetryConfig {
   /** ignoreUrls */
   ignoreUrls?: IgnoreUrlsConfig;
   
+  // NEW: Span timeout configuration for memory leak prevention
+  /** spanTimeout: Configuration for automatic span timeout and cleanup */
+  spanTimeout?: SpanTimeoutConfig;
+  
   // NEW: Logs configuration and exporters (zero migration required)
   /** logsConfig: Configuration for structured logging */
   logsConfig?: LogsConfig;
@@ -353,6 +443,10 @@ export interface OpenTelemetryConfig {
   metricsExporters?: MetricsExporters;
   /** multiMetricsExporters: Advanced multi-exporter configuration with priorities and strategies */
   multiMetricsExporters?: MultiMetricsExporters;
+  
+  // NEW: Service Worker configuration for trace context support
+  /** serviceWorkerConfig: Configuration for service worker trace context integration */
+  serviceWorkerConfig?: ServiceWorkerConfig;
 }
 
 /** OTEL_CONFIG : Config injection */
@@ -378,6 +472,13 @@ export const OTEL_METRICS_CONFIG = new InjectionToken<MetricsConfig>('otelcol.me
 
 /** Metrics provider injection token */
 export const OTEL_METRICS_PROVIDER = new InjectionToken<any>('otelcol.metrics.provider');
+
+// NEW: Service Worker injection tokens
+/** Service Worker configuration injection token */
+export const OTEL_SERVICE_WORKER_CONFIG = new InjectionToken<ServiceWorkerConfig>('otelcol.service-worker.config');
+
+/** Service Worker trace bridge injection token */
+export const OTEL_SERVICE_WORKER_BRIDGE = new InjectionToken<any>('otelcol.service-worker.bridge');
 
 export const defineConfigProvider = (
   config: OpenTelemetryConfig | null | undefined,

@@ -54,6 +54,7 @@ import { OTEL_EXPORTER, IExporter } from '../services/exporter/exporter.interfac
 import { OTEL_PROPAGATOR, IPropagator } from '../services/propagator/propagator.interface';
 import { OTEL_LOGGER, OTEL_CUSTOM_SPAN } from '../configuration/opentelemetry-config';
 import { CustomSpan } from './custom-span.interface';
+import { SpanTimeoutManager, SpanType } from '../services/span-timeout-manager.service';
 
 /**
  * OpenTelemetryInterceptor class
@@ -95,7 +96,8 @@ export class OpenTelemetryHttpInterceptor implements HttpInterceptor {
     private logger: DiagLogger,
     @Optional() @Inject(OTEL_CUSTOM_SPAN)
     private customSpan: CustomSpan,
-    private platformLocation: PlatformLocation
+    private platformLocation: PlatformLocation,
+    private spanTimeoutManager: SpanTimeoutManager
   ) {
     // console.log('[HTTP-INTERCEPTOR] Constructor called with services:', {
     //   configExists: !!this.config,
@@ -118,7 +120,13 @@ export class OpenTelemetryHttpInterceptor implements HttpInterceptor {
     // CRITICAL FIX: Register tracer provider globally for logs trace correlation
     // This bridges the interceptor's tracer to the global OpenTelemetry context
     // enabling logs service to access active span information
+    console.log('[HTTP-INTERCEPTOR] Registering global tracer provider:', !!this.tracer);
     api.trace.setGlobalTracerProvider(this.tracer);
+    
+    // Verify registration worked
+    const globalProvider = api.trace.getTracerProvider();
+    console.log('[HTTP-INTERCEPTOR] Global tracer provider after registration:', !!globalProvider);
+    console.log('[HTTP-INTERCEPTOR] Providers match:', this.tracer === globalProvider);
     
     this.logBody = config.commonConfig.logBody;
     api.diag.setLogger(logger, config.commonConfig.logLevel);
@@ -142,12 +150,53 @@ export class OpenTelemetryHttpInterceptor implements HttpInterceptor {
         return next.handle(request);
       }
       
-      // console.log(`[HTTP-INTERCEPTOR] Processing HTTP request for tracing`);
-      this.contextManager.disable(); //FIX - reinit contextManager for each http call
-      this.contextManager.enable();
-      const span: Span = this.initSpan(request);
-      const tracedReq = this.injectContextAndHeader(request);
-      return next.handle(tracedReq).pipe(
+      console.log(`[HTTP-INTERCEPTOR] Processing HTTP request for tracing`);
+      
+      // RACE CONDITION FIX: Create isolated context per request instead of disable/enable
+      // This ensures each HTTP request gets its own trace context without bleeding
+      const parentContext = api.context.active();
+      
+      try {
+        // Create span within isolated context
+        const span: Span = this.initSpanWithContext(request, parentContext);
+        
+        // Set the span as active in the context for the entire request lifecycle
+        const spanContext = api.trace.setSpan(parentContext, span);
+        
+        // CRITICAL FIX: Force context binding using both OTEL and manual context storage
+        // Store span context globally for logs service access
+        const globalContext = (globalThis as any);
+        if (!globalContext.__otelActiveSpans) {
+          globalContext.__otelActiveSpans = new Map();
+        }
+        
+        const requestId = Math.random().toString(36);
+        globalContext.__otelActiveSpans.set(requestId, {
+          span,
+          spanContext,
+          timestamp: Date.now()
+        });
+        
+        // Also store in window for broader access
+        if (typeof window !== 'undefined') {
+          (window as any).__otelCurrentSpan = span;
+          (window as any).__otelCurrentContext = spanContext;
+        }
+        
+        console.log('[HTTP-INTERCEPTOR] Stored span context globally:', {
+          requestId,
+          hasSpan: !!span,
+          hasContext: !!spanContext,
+          traceId: span.spanContext().traceId,
+          spanId: span.spanContext().spanId,
+          activeSpansCount: globalContext.__otelActiveSpans.size
+        });
+        
+        // Execute request handling within the span's context to ensure proper isolation
+        return api.context.with(spanContext, () => {
+          const tracedReq = this.injectContextAndHeader(request);
+          
+          return next.handle(tracedReq).pipe(
         tap(
           (event: HttpResponse<any>) => {
             span.setAttributes(
@@ -181,15 +230,70 @@ export class OpenTelemetryHttpInterceptor implements HttpInterceptor {
             this.setCustomSpan(span, request, event);
           }
         ),
+            finalize(() => {
+              // Enhanced context handling: Keep context active briefly for async operations
+              // This allows logs and other operations triggered by the HTTP response
+              // to still have access to the span context
+              setTimeout(() => {
+                // Clean up within the span context to ensure proper finalization
+                api.context.with(spanContext, () => {
+                  span.end();
+                  // Untrack span from timeout manager
+                  this.spanTimeoutManager.untrackSpan(span);
+                  
+                  // Clean up global context storage
+                  const globalContext = (globalThis as any);
+                  if (globalContext.__otelActiveSpans) {
+                    globalContext.__otelActiveSpans.delete(requestId);
+                  }
+                  
+                  // Clean up window storage
+                  if (typeof window !== 'undefined') {
+                    delete (window as any).__otelCurrentSpan;
+                    delete (window as any).__otelCurrentContext;
+                  }
+                  
+                  console.log('[HTTP-INTERCEPTOR] Cleaned up global OTEL context storage');
+                });
+              }, 250); // 250ms grace period for async operations
+            })
+          );
+        });
+      } catch (contextError) {
+        // Fallback to legacy behavior if context isolation fails
+        console.warn('[HTTP-INTERCEPTOR] Context isolation failed, falling back to legacy behavior:', contextError);
+        return this.legacyInterceptLogic(request, next);
+      }
+    }
+    
+    /**
+     * Legacy intercept logic as fallback
+     */
+    private legacyInterceptLogic(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
+      this.contextManager.disable();
+      this.contextManager.enable();
+      const span: Span = this.initSpan(request);
+      const tracedReq = this.injectContextAndHeader(request);
+      return next.handle(tracedReq).pipe(
+        tap(
+          (event: HttpResponse<any>) => {
+            span.setAttributes({
+              [ATTR_HTTP_RESPONSE_STATUS_CODE]: event.status,
+            });
+            this.setCustomSpan(span, request, event);
+          },
+          (event: HttpErrorResponse) => {
+            span.setAttributes({
+              [ATTR_HTTP_RESPONSE_STATUS_CODE]: event.status,
+              [ATTR_ERROR_TYPE] : event.name,
+            });
+            this.setCustomSpan(span, request, event);
+          }
+        ),
         finalize(() => {
-          // Enhanced context handling: Keep context active briefly for async operations
-          // This allows logs and other operations triggered by the HTTP response
-          // to still have access to the span context
           setTimeout(() => {
             span.end();
-            // Don't disable context manager completely as it's shared
-            // Just let the span end naturally
-          }, 250); // 250ms grace period for async operations
+          }, 250);
         })
       );
     }
@@ -213,7 +317,57 @@ export class OpenTelemetryHttpInterceptor implements HttpInterceptor {
     });
   }
   /**
-   * Initialise a span for a request intercepted
+   * Create span with context isolation (new method)
+   *
+   * @param request request
+   * @param parentContext the parent context for this request
+   */
+  private initSpanWithContext(request: HttpRequest<unknown>, parentContext: any): Span {
+    console.log(`[HTTP-INTERCEPTOR] Creating context-isolated span for ${request.method} ${request.url}`);
+    console.log(`[HTTP-INTERCEPTOR] Tracer exists:`, !!this.tracer);
+    
+    const urlRequest = (request.urlWithParams.startsWith('http')) ? new URL(request.urlWithParams) : new URL(this.getURL());
+    const operationName = `${request.method.toUpperCase()} ${urlRequest.pathname}`;
+    
+    const span = this.tracer
+      .getTracer(infoLibrary.name, infoLibrary.version)
+      .startSpan(
+        `${request.method.toUpperCase()}`,
+        {
+          attributes: {
+            [ATTR_HTTP_REQUEST_METHOD]: request.method,
+            [ATTR_SERVER_ADDRESS]: urlRequest.host,
+            [ATTR_SERVER_PORT]: urlRequest.port,
+            [ATTR_URL_FULL]: request.urlWithParams,
+            [ATTR_URL_SCHEME]: urlRequest.protocol.replace(':', ''),
+            [ATTR_URL_QUERY]: urlRequest.search,
+            [ATTR_USER_AGENT_ORIGINAL]: window.navigator.userAgent
+          },
+          kind: SpanKind.CLIENT,
+        },
+        parentContext
+      );
+      
+    console.log('[HTTP-INTERCEPTOR] HTTP span created:', {
+      method: request.method,
+      url: request.url,
+      hasSpan: !!span,
+      spanId: span.spanContext().spanId,
+      traceId: span.spanContext().traceId
+    });
+    
+    // Register HTTP span for timeout management
+    this.spanTimeoutManager.trackSpan(
+      span,
+      SpanType.HTTP,
+      operationName
+    );
+    
+    return span;
+  }
+
+  /**
+   * Initialise a span for a request intercepted (legacy method)
    *
    * @param request request
    */
