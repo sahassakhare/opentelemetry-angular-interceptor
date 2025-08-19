@@ -125,6 +125,7 @@ export {
 
 // NEW: Enhanced Trace Context Service and Span Timeout Management
 export { TraceContextService } from './lib/services/trace-context.service';
+export { SpanTimeoutManager } from './lib/services/span-timeout-manager.service';
 
 // NEW: Service Worker Trace Context Support
 export { 
