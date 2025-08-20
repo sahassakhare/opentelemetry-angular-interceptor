@@ -6,7 +6,7 @@ import { Resource } from '@opentelemetry/resources';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
 
 import { OpenTelemetryConfig } from '../../configuration/opentelemetry-config';
-import { IMetricsExporter, OTEL_METRICS_EXPORTER } from '../exporter/exporter.interface';
+import { IMetricsExporter, OTEL_METRICS_EXPORTER, OTEL_METRICS_EXPORTERS } from '../exporter/exporter.interface';
 
 /**
  * Factory function to create MeterProvider using modular exporters
@@ -37,16 +37,30 @@ export function createMetricsProviderModular(
     const readers: any[] = [];
 
     try {
-      const metricsExporter = injector.get<IMetricsExporter>(OTEL_METRICS_EXPORTER, null);
-      if (metricsExporter) {
-        const reader = metricsExporter.getReader();
-        readers.push(reader);
-        console.log('OpenTelemetry Metrics Provider initialized with modular reader');
+      const metricsExporters = injector.get<IMetricsExporter[]>(OTEL_METRICS_EXPORTERS, []);
+      
+      if (metricsExporters.length > 0) {
+        console.log(`OpenTelemetry Metrics: Found ${metricsExporters.length} modular exporter(s)`);
+        
+        // Add a reader for each exporter
+        metricsExporters.forEach((metricsExporter, index) => {
+          const reader = metricsExporter.getReader();
+          readers.push(reader);
+          console.log(`Added metrics reader ${index + 1}/${metricsExporters.length}`);
+        });
       } else {
-        console.warn('No metrics exporter found in dependency injection');
+        // Fallback to single exporter for backwards compatibility
+        const singleExporter = injector.get<IMetricsExporter>(OTEL_METRICS_EXPORTER, null);
+        if (singleExporter) {
+          const reader = singleExporter.getReader();
+          readers.push(reader);
+          console.log('OpenTelemetry Metrics Provider initialized with single modular reader');
+        } else {
+          console.warn('No metrics exporters found. Please import at least one metrics exporter module.');
+        }
       }
     } catch (error) {
-      console.warn('Failed to get metrics exporter from DI, falling back to configuration-based setup:', error);
+      console.error('Failed to get metrics exporters from dependency injection:', error);
     }
 
     // Create MeterProvider with collected readers

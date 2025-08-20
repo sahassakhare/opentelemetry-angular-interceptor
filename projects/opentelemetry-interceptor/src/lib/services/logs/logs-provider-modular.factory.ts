@@ -6,7 +6,7 @@ import { Resource } from '@opentelemetry/resources';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
 
 import { OpenTelemetryConfig } from '../../configuration/opentelemetry-config';
-import { ILogsExporter, OTEL_LOGS_EXPORTER } from '../exporter/exporter.interface';
+import { ILogsExporter, OTEL_LOGS_EXPORTER, OTEL_LOGS_EXPORTERS } from '../exporter/exporter.interface';
 
 /**
  * Factory function to create LoggerProvider using modular exporters
@@ -38,24 +38,41 @@ export function createLogsProviderModular(
       resource
     });
 
-    // Try to get injected exporters
+    // Get all injected exporters using multi-provider pattern
     try {
-      const logsExporter = injector.get<ILogsExporter>(OTEL_LOGS_EXPORTER, null);
-      if (logsExporter) {
-        const exporter = logsExporter.getExporter();
-        const isProduction = config.commonConfig.production ?? false;
+      const logsExporters = injector.get<ILogsExporter[]>(OTEL_LOGS_EXPORTERS, []);
+      const isProduction = config.commonConfig.production ?? false;
+      
+      if (logsExporters.length > 0) {
+        console.log(`OpenTelemetry Logs: Found ${logsExporters.length} modular exporter(s)`);
         
-        const processor = isProduction
-          ? new BatchLogRecordProcessor(exporter)
-          : new SimpleLogRecordProcessor(exporter);
-
-        loggerProvider.addLogRecordProcessor(processor);
-        console.log('OpenTelemetry Logs Provider initialized with modular exporter');
+        // Add a processor for each exporter
+        logsExporters.forEach((logsExporter, index) => {
+          const exporter = logsExporter.getExporter();
+          const processor = isProduction
+            ? new BatchLogRecordProcessor(exporter)
+            : new SimpleLogRecordProcessor(exporter);
+          
+          loggerProvider.addLogRecordProcessor(processor);
+          console.log(`Added logs exporter ${index + 1}/${logsExporters.length}`);
+        });
       } else {
-        console.warn('No logs exporter found in dependency injection');
+        // Fallback to single exporter for backwards compatibility
+        const singleExporter = injector.get<ILogsExporter>(OTEL_LOGS_EXPORTER, null);
+        if (singleExporter) {
+          const exporter = singleExporter.getExporter();
+          const processor = isProduction
+            ? new BatchLogRecordProcessor(exporter)
+            : new SimpleLogRecordProcessor(exporter);
+          
+          loggerProvider.addLogRecordProcessor(processor);
+          console.log('OpenTelemetry Logs Provider initialized with single modular exporter');
+        } else {
+          console.warn('No logs exporters found. Please import at least one logs exporter module.');
+        }
       }
     } catch (error) {
-      console.warn('Failed to get logs exporter from DI, falling back to configuration-based setup:', error);
+      console.error('Failed to get logs exporters from dependency injection:', error);
     }
 
     return loggerProvider;

@@ -27,17 +27,13 @@ import { OpenTelemetryHttpInterceptor } from './interceptor/opentelemetry-http.i
 // NEW: Import logs and metrics services
 import { 
   OpenTelemetryLogsService, 
-  logsProviderFactory,
+  logsProviderModularFactory,
   OpenTelemetryErrorHandler 
 } from './services/logs';
 import { 
   OpenTelemetryMetricsService, 
-  metricsProviderFactory 
+  metricsProviderModularFactory
 } from './services/metrics';
-
-// NEW: Import multi-exporter factories
-import { logsProviderMultiFactory } from './services/logs/logs-provider-multi.factory';
-import { metricsProviderMultiFactory } from './services/metrics/metrics-provider-multi.factory';
 
 
 @NgModule({
@@ -85,11 +81,11 @@ export class OpenTelemetryInterceptorModule {
             provide: OTEL_LOGS_CONFIG,
             useValue: config.logsConfig
           },
-          // Logs provider factory - use standard factory for config-based exporters
+          // Logs provider factory - use modular factory ONLY
           {
             provide: OTEL_LOGS_PROVIDER,
-            useFactory: logsProviderFactory,
-            deps: [OTEL_CONFIG, PLATFORM_ID]
+            useFactory: logsProviderModularFactory,
+            deps: [OTEL_CONFIG, PLATFORM_ID, Injector]
           },
           // Logs service
           OpenTelemetryLogsService,
@@ -109,10 +105,10 @@ export class OpenTelemetryInterceptorModule {
             provide: OTEL_METRICS_CONFIG,
             useValue: config.metricsConfig
           },
-          // Metrics provider factory - use multi-exporter factory for better compatibility
+          // Metrics provider factory - use modular factory ONLY
           {
             provide: OTEL_METRICS_PROVIDER,
-            useFactory: metricsProviderMultiFactory,
+            useFactory: metricsProviderModularFactory,
             deps: [OTEL_CONFIG, PLATFORM_ID, Injector]
           },
           // Metrics service

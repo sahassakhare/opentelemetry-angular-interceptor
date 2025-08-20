@@ -1,6 +1,53 @@
-# Recent Changes - Past 12 Hours (August 15, 2025)
+# Recent Changes - Past 24 Hours (August 20, 2025)
 
 ## Summary
+**MAJOR SIMPLIFICATION + CRITICAL FIXES**: Unified to single modular approach for maximum simplicity. Eliminated configuration-based exporter approach. Previously resolved critical trace correlation issues where logs showed undefined trace_id and span_id.
+
+## Latest Changes (August 20, 2025)
+
+### 🎯 **SIMPLIFIED TO MODULAR APPROACH ONLY**
+
+**Problem**: Having both modular and configuration-based approaches was confusing users.
+
+**Solution**: Eliminated configuration-based approach entirely. Now uses ONLY the clean modular approach.
+
+#### **Key Changes:**
+1. **Single Approach**: Only modular exporters, no configuration-based exporters
+2. **Consistent Pattern**: All 10 exporter modules follow same structure
+3. **Multiple Exporters**: All modules support multi-exporter tokens with `multi: true`
+4. **No forRoot()**: Removed forRoot() from logs/metrics exporters for consistency
+
+#### **Files Modified:**
+- **All 10 exporter modules**: Standardized to consistent pattern
+- **Main interceptor module**: Updated to use only modular factories
+- **App example**: Simplified to show single approach
+- **Documentation**: Updated guides and examples
+
+#### **New Usage Pattern:**
+```typescript
+// ✅ Simple and clean
+imports: [
+  LogsOtelcolExporterModule,        // Just import what you need
+  LogsConsoleExporterModule,        // Multiple exporters work automatically
+  MetricsOtelcolExporterModule,
+  MetricsConsoleExporterModule,
+  OpenTelemetryInterceptorModule.forRoot({
+    // Only behavior configuration, no exporter configs
+  })
+]
+```
+
+#### **Benefits:**
+- ✅ No more confusion between approaches
+- ✅ Multiple exporters work automatically
+- ✅ Clean, consistent API
+- ✅ No circular dependencies
+- ✅ Backwards compatible
+
+## Previous Changes (August 15, 2025)
+
+### 🚨 **CRITICAL TRACE CORRELATION FIX**
+
 **CRITICAL FIX**: Resolved trace correlation issues where logs showed undefined trace_id and span_id. Implemented multi-tier fallback system for robust trace context retrieval across Angular's async boundaries.
 
 ## Problem Solved

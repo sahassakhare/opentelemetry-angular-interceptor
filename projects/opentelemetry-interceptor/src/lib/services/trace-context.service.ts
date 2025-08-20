@@ -34,21 +34,36 @@ export class TraceContextService {
       const tracer = trace.getTracer('angular-ui', '1.0.0');
       console.log('[TraceContextService] Tracer obtained:', !!tracer);
       
+      // CRITICAL FIX: Start span with root context for UI interactions
+      // UI interactions should start new trace roots, not be children of HTTP spans
       const span = tracer.startSpan(operationName, {
         kind: SpanKind.INTERNAL,
         attributes: {
           'interaction.type': 'ui',
           'component.name': 'angular',
+          'span.source': 'trace-context-service',
           ...attributes
         }
+        // Remove parentContext to start a new trace root
       });
 
+      const spanContext = span.spanContext();
       console.log('[TraceContextService] Span created:', {
         operationName,
         hasSpan: !!span,
-        spanId: span.spanContext().spanId,
-        traceId: span.spanContext().traceId
+        spanId: spanContext.spanId,
+        traceId: spanContext.traceId,
+        traceFlags: spanContext.traceFlags,
+        isValid: trace.isSpanContextValid(spanContext),
+        isSampled: (spanContext.traceFlags & 1) === 1
       });
+
+      // Validate span context before returning
+      if (!trace.isSpanContextValid(spanContext)) {
+        console.warn('[TraceContextService] Created span context is invalid, ending span');
+        span.end();
+        return null;
+      }
 
       return span;
     } catch (error) {
@@ -77,8 +92,18 @@ export class TraceContextService {
     }
 
     try {
+      // CRITICAL FIX: Set the span as active in the context
+      const activeContext = trace.setSpan(otelContext.active(), span);
+      
+      console.log('[TraceContextService] Executing with active span context:', {
+        operationName,
+        spanId: span.spanContext().spanId,
+        traceId: span.spanContext().traceId,
+        contextSet: !!activeContext
+      });
+      
       // Execute the function within the span context
-      return otelContext.with(trace.setSpan(otelContext.active(), span), () => {
+      return otelContext.with(activeContext, () => {
         try {
           const result = fn();
           span.setStatus({ code: 1 }); // OK status
@@ -92,6 +117,9 @@ export class TraceContextService {
           throw error;
         }
       });
+    } catch (contextError) {
+      console.error('[TraceContextService] Failed to execute with context:', contextError);
+      return fn();
     } finally {
       // End the span after a brief delay to allow async operations
       setTimeout(() => {

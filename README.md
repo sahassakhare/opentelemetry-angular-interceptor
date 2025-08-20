@@ -32,9 +32,12 @@ More info : https://jufab.github.io/opentelemetry-angular-interceptor/
 - **Offline operation support** with trace preservation
 
 **New Documentation:**
+- [Complete Configuration Examples](./COMPLETE-CONFIGURATION-EXAMPLE.md) ⭐ **NEW**
+- [Simple Usage Guide](./SIMPLE-USAGE-GUIDE.md) ⭐ **UPDATED**
 - [Production Enhancements Guide](./PRODUCTION-ENHANCEMENTS.md)
 - [Trace Correlation Guide](./TRACE-CORRELATION-GUIDE.md)
 - [Service Worker Integration](./SERVICE-WORKER-INTEGRATION.md)
+- [Recent Changes Summary](./RECENT-CHANGES.md)
 
 ## Table of contents
 
@@ -96,6 +99,51 @@ npm i @jufab/opentelemetry-angular-interceptor
 ```
 
 ### Configuration
+
+### 🚀 Quick Start (Simplified Approach)
+
+The enhanced version uses a **simplified modular approach** - just import the exporters you need!
+
+```typescript
+import { NgModule } from '@angular/core';
+import { 
+  OpenTelemetryInterceptorModule,
+  OtelColExporterModule,
+  LogsOtelcolExporterModule,
+  LogsConsoleExporterModule,
+  MetricsOtelcolExporterModule,
+  MetricsConsoleExporterModule,
+  CompositePropagatorModule
+} from '@jufab/opentelemetry-angular-interceptor';
+
+@NgModule({
+  imports: [
+    // 1. Import exporter modules
+    OtelColExporterModule,              // Traces to OTLP
+    LogsOtelcolExporterModule,          // Logs to OTLP
+    LogsConsoleExporterModule,          // Logs to console (dev)
+    MetricsOtelcolExporterModule,       // Metrics to OTLP
+    MetricsConsoleExporterModule,       // Metrics to console (dev)
+    CompositePropagatorModule,
+    
+    // 2. Configure behavior (not exporters)
+    OpenTelemetryInterceptorModule.forRoot({
+      commonConfig: {
+        serviceName: 'my-angular-app',
+        probabilitySampler: '1'
+      },
+      logsConfig: { enabled: true },
+      metricsConfig: { enabled: true }
+      // No exporter configurations needed!
+    })
+  ]
+})
+export class AppModule { }
+```
+
+**That's it!** Multiple exporters work automatically. See [Complete Configuration Examples](./COMPLETE-CONFIGURATION-EXAMPLE.md) for advanced usage.
+
+### Advanced Configuration
 
 Use the "OpentelemetryConfig" interface to configure the Tracer
 

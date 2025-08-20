@@ -95,6 +95,31 @@ jufab-enhanced/
 
 ## Configuration
 
+### Simplified Modular Approach (UPDATED)
+
+The library now uses a **SINGLE APPROACH** for maximum simplicity: **Modular Exporters Only**.
+
+#### Basic Usage Pattern
+```typescript
+// Import exporter modules
+imports: [
+  OtelColExporterModule,           // Traces
+  LogsOtelcolExporterModule,       // Logs
+  LogsConsoleExporterModule,       // Logs (console)
+  MetricsOtelcolExporterModule,    // Metrics
+  MetricsConsoleExporterModule,    // Metrics (console)
+  CompositePropagatorModule,       // Propagation
+  
+  // Configure behavior (not exporters)
+  OpenTelemetryInterceptorModule.forRoot({
+    commonConfig: { serviceName: 'my-app' },
+    logsConfig: { enabled: true },
+    metricsConfig: { enabled: true }
+    // No exporter configurations needed!
+  })
+]
+```
+
 ### Enhanced OpenTelemetry Configuration
 
 ```typescript

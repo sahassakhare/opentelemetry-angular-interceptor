@@ -42,15 +42,11 @@ import { ErrorDemoComponent } from './components/error-demo/error-demo.component
     BrowserModule,
     HttpClientModule,
     // Import exporter modules FIRST, before OpenTelemetryInterceptorModule
-     LogsOtelcolExporterModule.forRoot({
-          // retry: {
-          //   enabled: false, // DISABLE RETRIES TO PREVENT BROWSER CRASH
-          //   maxAttempts: 1
-          // }
-        }),
-        
-        // Console logs exporter for development debugging
-        LogsConsoleExporterModule.forRoot(),
+    // Now using simplified pattern without forRoot() for consistency
+    LogsOtelcolExporterModule,
+    LogsConsoleExporterModule,
+    MetricsOtelcolExporterModule,
+    MetricsConsoleExporterModule,
         
     OtelColExporterModule, // Move this BEFORE the interceptor module
     CompositePropagatorModule, // Move this BEFORE the interceptor module
@@ -118,17 +114,8 @@ import { ErrorDemoComponent } from './components/error-demo/error-demo.component
         }
       },
 
-      logsExporters: {
-        otlp: {
-          retry: {
-            enabled: false, // DISABLE RETRIES TO PREVENT BROWSER CRASH
-            maxAttempts: 1
-          }
-        },
-        console: {
-          enabled: true
-        }
-      },
+      // Exporter configuration is handled by importing exporter modules above.
+      // No need for logsExporters configuration when using modular approach.
 
       // Metrics Configuration
       metricsConfig: {
@@ -145,19 +132,8 @@ import { ErrorDemoComponent } from './components/error-demo/error-demo.component
         }
       },
 
-      metricsExporters: {
-        otlp: {
-          intervalMs: 15000,
-          retry: {
-            enabled: false, // DISABLE RETRIES TO PREVENT BROWSER CRASH
-            maxAttempts: 1
-          }
-        },
-        console: {
-          enabled: true,
-          intervalMs: 30000
-        }
-      }
+      // Exporter configuration is handled by importing exporter modules above.
+      // No need for metricsExporters configuration when using modular approach.
     })
     // Exporter modules moved to top of imports array
   ],
